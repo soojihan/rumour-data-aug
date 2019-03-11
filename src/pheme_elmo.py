@@ -26,7 +26,7 @@ import operator
 import csv
 # from textcleaner import tokenize_by_word
 from credbankprocessor import preprocessing_tweet_text
-from preprocessing import text_preprocessor
+# from preprocessing import text_preprocessor
 from ast import literal_eval # convert string list to actual list
 from nltk import TweetTokenizer
 from semeval_data_processor import load_csv
@@ -37,6 +37,10 @@ from nltk import WordNetLemmatizer
 from glob import glob
 import argparse
 
+"""
+Inefficient for large datasets 
+"""
+### compute elmo for every single tweet and save it to dictionary
 
 # _stop_words = stopwords.words('english')
 # _stop_words.extend(['bostonbombings', 'boston', 'pray', 'prayforboston', 'marathon'])
@@ -65,10 +69,18 @@ batch_num = args.batch_num
 save_dir = args.save_dir
 ref_path = args.ref_path
 data_path = args.cand_path
-print("save_dir ", save_dir)
-batch_size = 1000
+# batch_size = 1000
+batch_size = 500
 
 print("Hello World")
+options_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway_5.5B/elmo_2x4096_512_2048cnn_2xhighway_5.5B_options.json"
+weight_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway_5.5B/elmo_2x4096_512_2048cnn_2xhighway_5.5B_weights.hdf5"
+#
+# options_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x1024_128_2048cnn_1xhighway/elmo_2x1024_128_2048cnn_1xhighway_options.json"
+# weight_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x1024_128_2048cnn_1xhighway/elmo_2x1024_128_2048cnn_1xhighway_weights.hdf5"
+elmo = ElmoEmbedder(options_file= options_file, weight_file=weight_file)
+
+def prepare_elmo_embeddings():
 
 def load_data():
     # ref_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data_augmentation/data/ref/boston_manref_{}.csv'.format(batch_num))
@@ -96,12 +108,7 @@ def elmo_semantic_similarity():
     Compute semantic similarity using ELMo embeddings
     :return:
     """
-    options_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway_5.5B/elmo_2x4096_512_2048cnn_2xhighway_5.5B_options.json"
-    weight_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway_5.5B/elmo_2x4096_512_2048cnn_2xhighway_5.5B_weights.hdf5"
-    #
-    # options_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x1024_128_2048cnn_1xhighway/elmo_2x1024_128_2048cnn_1xhighway_options.json"
-    # weight_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x1024_128_2048cnn_1xhighway/elmo_2x1024_128_2048cnn_1xhighway_weights.hdf5"
-    elmo = ElmoEmbedder(options_file= options_file, weight_file=weight_file)
+
 
     ref, data = load_data()
     processed_ref = list(map(lambda x: preprocessing_tweet_text(x), ref['text'].values))
@@ -179,34 +186,37 @@ def elmo_semantic_similarity():
         print("---- Time elapsed for ref {}: {} minutes ".format(i, (end_ref-start_ref)/60))
     print("Done")
 
+
+
 def eval_results():
     result_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data_augmentation/results/ref_batch_2/elmo_merged_55b_ref0.csv')
     eval(result_path)
 
 def merge_batch_results():
-    batch_n = 2
+    batch_n = 6
     ref_n = 1
-    merged_df = pd.DataFrame()
-    files = glob(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data_augmentation/results/ref_batch_{}/elmo_ref{}*.csv'.format(batch_n, ref_n)))
-    pp(files)
-    for x in files:
-        df = pd.read_csv(x)
-        merged_df = pd.concat([merged_df, df], axis=0, ignore_index=True)
-
-        # print(merged_df)
-    print(len(merged_df))
+    # merged_df = pd.DataFrame()
+    # files = glob(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data_augmentation/results/ref_batch_{}/elmo_ref{}*.csv'.format(batch_n, ref_n)))
+    # pp(files)
+    # for x in files:
+    #     df = pd.read_csv(x)
+    #     merged_df = pd.concat([merged_df, df], axis=0, ignore_index=True)
+    #
+    #     # print(merged_df)
+    # print(len(merged_df))
     outfile = os.path.join(os.path.dirname(os.path.dirname(__file__)),
                            'data_augmentation/results/ref_batch_{}'.format(batch_n))
-    merged_df.to_csv(os.path.join(outfile, 'elmo_merged_55b_ref{}.csv'.format(ref_n)))
-
+    # merged_df.to_csv(os.path.join(outfile, 'elmo_merged_55b_ref{}.csv'.format(ref_n)))
+    merged_df = pd.read_csv(os.path.join(outfile, 'elmo_merged_55b_ref{}.csv'.format(ref_n)))
     subset = merged_df[merged_df['sim_scores'] >= 0.673580]
     subset.to_csv(os.path.join(os.path.dirname(os.path.dirname(__file__)),
                                'data_augmentation/results/ref_batch_{}/ref{}_subset.csv'.format(batch_n, ref_n)))
-    print(df.head())
+    # print(df.head())
 
 #
-elmo_semantic_similarity()
+# elmo_semantic_similarity()
 # eval_results()
-# merge_batch_results()
+merge_batch_results()
+
 
 

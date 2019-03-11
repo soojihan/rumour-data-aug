@@ -31,33 +31,38 @@ pd.set_option('display.max_columns', None)
 batch_num = 8
 
 def load_csv(file_path):
-    with open(file_path, 'r') as f:
-        df = pd.read_csv(f)
+    with open(file_path, 'rb') as f:
+        df = pd.read_csv(f, encoding = "utf-8")
 
     return df
 
 def segment_csv():
-    ref_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'bostonbombings_reference.csv')
+    """
+    Divide reference tweets into multiple batches
+    :return:
+    """
+    ref_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data_augmentation/data/ref/man_ref.csv')
     ref = load_csv(ref_path)
-    ref.drop_duplicates(subset = ['processed_text'], inplace=True) # remove duplicate rows
-    ref.drop(['Unnamed: 0'], inplace=True, axis=1)
-    ref = ref[2:]
+    # ref.drop_duplicates(subset = ['processed_text'], inplace=True) # remove duplicate rows
+    # ref.drop(['Unnamed: 0'], inplace=True, axis=1)
+    # ref = ref[2:]
     ref.reset_index(inplace=True, drop=True)
+    ref = ref[['text']]
     print(len(ref))
     print(ref.head(2))
     print(ref.tail(2))
-    num_segmentations = list(np.arange(17)*12)
+    num_segmentations = list(np.arange(10)*10)
     print(num_segmentations)
 
     for i, num in enumerate(num_segmentations):
         if i>0:
             print(num_segmentations[i-1] ,num)
             subset = ref.loc[num_segmentations[i-1]: min(num, len(ref))-1]
-            print(subset)
             subset.reset_index(inplace=True, drop=True)
-            out = os.path.join('..', 'train_augmentation/data')
+            print(subset)
+            out = os.path.join('..', 'data_augmentation/data/ref')
             os.makedirs(out, exist_ok=True)
-            with open(os.path.join(out, 'boston_{}.csv'.format(i)), 'w') as f:
+            with open(os.path.join(out, '{}_manref_{}.csv'.format("boston", i)), 'w') as f:
                 subset.to_csv(f)
         else:
             continue
@@ -127,6 +132,6 @@ def semantic_similarity():
             # result_df.to_csv(os.path.join(result_path, 'boton_{}.csv'.format(batch_num)))
         # print("...Reference {} is complete".format(i))
 
-semantic_similarity()
-# segment_csv()
+# semantic_similarity()
+segment_csv()
 

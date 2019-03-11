@@ -6,6 +6,10 @@ import os
 import shutil
 import tweepy
 import json
+
+"""
+Rearrange retweets collected using 'retweet_collector.py' to be compatible with the original PHEME dataset
+"""
 # consumer_key =  "yTaqhLcxY2SJTcJSbe9CTlfWI"
 # consumer_secret = "au6Mj1lMGzlnDkkqcZrCoowzylJ0yxsAlmVLXRKDwpUkU7uXUu"
 # access_token = "803794891000205314-bs7wteyEIAxuETlcxkjOyvtrCphiKsD"

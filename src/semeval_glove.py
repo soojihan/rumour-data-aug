@@ -36,6 +36,23 @@ from nltk import TweetTokenizer
 
 from semeval_data_processor import load_csv
 from simsem_eval import eval
+import nltk
+from nltk.corpus import stopwords
+from nltk import WordNetLemmatizer
+import string
+_stop_words = stopwords.words('english')
+stop_words_filter = lambda t : filter(lambda a: a not in _stop_words, t)
+punctuation_filter = lambda t : filter(lambda a: a not in string.punctuation, t)
+
+lemmatizer = WordNetLemmatizer()
+postag_map = {'j': 'a','n': 'n','v': 'v'}
+
+def _lemmatize(token_list):
+    lemmatized_tokens = [lemmatizer.lemmatize(token, postag_map[tag[0].lower()]) if tag[0].lower() in ['j', 'n', 'v']
+                        else lemmatizer.lemmatize(token) for token, tag in nltk.pos_tag(token_list)]
+    return lemmatized_tokens
+
+
 pd.set_option('display.max_columns', None)
 pd.options.mode.chained_assignment = None
 
@@ -77,6 +94,9 @@ def get_batch_embeddings(empty_batch_embeddings, tokenised_doc, glove_embeddings
             if token in glove_embeddings:
                 tweet_embeddings = np.mean(np.vstack((tweet_embeddings, glove_embeddings[token])), axis=0)
                 tweet_embeddings = tweet_embeddings.reshape(1, -1)
+        if tweet_embeddings.shape[0] == 0: # assign an array filled with zeros to an empty embedding
+            tweet_embeddings = np.zeros((1,300))
+
         batch_embeddings = np.vstack((batch_embeddings, tweet_embeddings))
 
     return batch_embeddings
@@ -95,7 +115,15 @@ def glove_semantic_similarity():
         start = time.time()
 
         tokenised_tweet1 = list(map(lambda x: literal_eval(x), batch['processed_tweet1'].values))
+        tokenised_tweet1 = list(map(lambda x: list(stop_words_filter(x)), tokenised_tweet1))
+        tokenised_tweet1 = list(map(lambda x: list(punctuation_filter(x)), tokenised_tweet1))
+        tokenised_tweet1 = list(map(lambda x: _lemmatize(x), tokenised_tweet1))
+
         tokenised_tweet2 = list(map(lambda x: literal_eval(x), batch['processed_tweet2'].values))
+        tokenised_tweet2 = list(map(lambda x: list(stop_words_filter(x)), tokenised_tweet2))
+        tokenised_tweet2 = list(map(lambda x: list(punctuation_filter(x)), tokenised_tweet2))
+        tokenised_tweet2 = list(map(lambda x: _lemmatize(x), tokenised_tweet2))
+
         print(len(tokenised_tweet1))
         batch_embeddings = np.empty((0, 200))
         batch_embeddings_tweet1 = get_batch_embeddings(batch_embeddings, tokenised_tweet1, glove_embeddings)
@@ -117,18 +145,18 @@ def glove_semantic_similarity():
         end = time.time()
         print("Time elapsed for bath {}: {}".format(int(j / batch_size), end - start))
         batch['sim_scores'] = batch_scores
-        outfile = os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                               'data/semeval2015/results/{}_batch{}.csv'.format('glove_merged', int(j / batch_size)))
-        batch.to_csv(outfile)
+        # outfile = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+        #                        'data/semeval2015/results/{}_batch{}.csv'.format('glove_merged', int(j / batch_size)))
+        # batch.to_csv(outfile)
     data['sim_scores'] = sim_scores
-    outfile = os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                           'data/semeval2015/results/{}.csv'.format('glove_merged'))
+    outfile = os.path.join(os.path.dirname(os.path.dirname(__file__)),'data/semeval2015/results/GloVe+preprocessing/{}.csv'.format('glove_merged'))
     data.to_csv(outfile)
     print("Done")
 
 def eval_results():
 
-    result_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data/semeval2015/results/glove/{}.csv'.format('glove_merged'))
+    result_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data/semeval2015/results/glove+preprocessing/{}.csv'.format('glove_merged'))
+    print(result_path)
     eval(result_path)
 
 # glove_semantic_similarity()

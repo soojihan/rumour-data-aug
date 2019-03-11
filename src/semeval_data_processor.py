@@ -16,6 +16,10 @@ from preprocessing import text_preprocessor
 
 from ast import literal_eval # convert string list to actual list
 
+
+"""
+
+"""
 def load_csv(file_path):
     with open(file_path, 'r') as f:
         df = pd.read_csv(f)

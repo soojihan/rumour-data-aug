@@ -7,6 +7,9 @@ import tweepy
 import json
 from twarc import Twarc
 
+"""
+Retreive the top 100 retweets of each context tweet in the Pheme data
+"""
 # consumer_key =  "yTaqhLcxY2SJTcJSbe9CTlfWI"
 # consumer_secret = "au6Mj1lMGzlnDkkqcZrCoowzylJ0yxsAlmVLXRKDwpUkU7uXUu"
 # access_token = "803794891000205314-bs7wteyEIAxuETlcxkjOyvtrCphiKsD"

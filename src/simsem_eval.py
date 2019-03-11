@@ -29,11 +29,13 @@ def eval(result_path):
         goldlabels = df['goldlabel'].values
         F, P, R = get_eval_metrics(syslabels, goldlabels)
         if max_F < F:
+        # if max_P < P:
             max_F = F
             max_P = P
             max_R = R
             optimum_threshold = threshold
             print("max F-measure: {:0.4f}, P: {:0.4f}, R: {:0.4f}, threshold: {:0.6f}".format(max_F, max_P, max_R, optimum_threshold))
+            # print("max P: {:0.4f}, F: {:0.4f}, R: {:0.4f}, threshold: {:0.6f}".format(max_P, max_F, max_R, optimum_threshold))
 
 
 def get_eval_metrics(syslabels, goldlabels):

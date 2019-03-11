@@ -5,6 +5,8 @@ from pprint import pprint as pp
 import os
 import tweepy
 import json
+from twarc import Twarc
+
 # consumer_key =  "yTaqhLcxY2SJTcJSbe9CTlfWI"
 # consumer_secret = "au6Mj1lMGzlnDkkqcZrCoowzylJ0yxsAlmVLXRKDwpUkU7uXUu"
 # access_token = "803794891000205314-bs7wteyEIAxuETlcxkjOyvtrCphiKsD"
@@ -15,13 +17,16 @@ consumer_secret='N6rZLSoVihWoqoqdjsAuxOuTaZAThAxc9PBjsP0Nkrbh6X8H71'
 access_token='803794891000205314-Fve4yFzgOW8SeuJlapIOtQ0HPYrUOOP'
 access_token_secret='enplY3OQzPPQA2ooMeVyfUPvJxzGEwMoSzcPx9lZc26Yq'
 
+## tweepy configuration
 auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
 auth.set_access_token(access_token, access_token_secret)
-
 api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
 
-
+## twint configuration
 c = twint.Config()
+## twarc configuration
+t = Twarc((consumer_key, consumer_secret, access_token, access_token_secret))
+
 #
 # c.User_id = '1960878613'
 #
@@ -62,27 +67,26 @@ pp(list(df))
 print(len(df))
 df.reset_index(inplace=True, drop=True)
 
-## Check missing IDs
-
-# missing_ids = pd.DataFrame(columns=list(df))
-# for i, row in df.iterrows():
-#     user_id = row['user_id']
-#     tweet_id = row['tweet_id']
-#     output_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data/train/{}'.format(tweet_id))
-#     print(output_path)
-#     if os.path.exists(output_path):
-#         print(i, "pass")
-#         continue
-#     else:
-#         missing_ids.loc[len(missing_ids)] = row
-# print(len(missing_ids))
-# print(missing_ids)
-# output_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data/train/missing_ids.csv')
-# missing_ids.to_csv(output_path)
+def check_missing_ids():
+    missing_ids = pd.DataFrame(columns=list(df))
+    for i, row in df.iterrows():
+        user_id = row['user_id']
+        tweet_id = row['tweet_id']
+        output_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data/train/{}'.format(tweet_id))
+        print(output_path)
+        if os.path.exists(output_path):
+            print(i, "pass")
+            continue
+        else:
+            missing_ids.loc[len(missing_ids)] = row
+    print(len(missing_ids))
+    print(missing_ids)
+    output_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data/train/missing_ids.csv')
+    missing_ids.to_csv(output_path)
 
 def retrieve_retweets():
     """
-    retrieve the first 100 retweets
+    retrieve the first 100 retweets using Twitter API
 
     :return:
     """
@@ -112,4 +116,16 @@ def retrieve_retweets():
                 print('Something went wrong, quitting...', e)
 
 
-retrieve_retweets()
+def scrape_retweets():
+    """
+    collect retweets using twarc scraper
+    :return: jsonl
+    """
+    # for tweet in t.retweets("525068387899031552"):
+    for tweet in t.retweets("529740161144602624"):
+        pp(tweet)
+        print(tweet["text"])
+
+# retrieve_retweets()
+scrape_retweets()
+

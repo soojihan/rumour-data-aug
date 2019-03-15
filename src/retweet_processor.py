@@ -59,16 +59,18 @@ def reformat_retweets():
 
     :return: JSON containing a single retweet
     """
-    input_files = glob.glob(os.path.join('..', 'data/train/missingids/*/retweets.json'))
-
+    # input_files = glob.glob(os.path.join('..', 'data/train/missingids/*/retweets.json'))
+    input_files = glob.glob(os.path.join('..', 'data/pheme-retweets/*/retweets.json'))
+    pp(input_files)
     outpath = glob.glob(os.path.join('..', '..', '..', 'Data/all-rnr-annotated-threads/*/*/*'))
     split_path = list(map(lambda x: x.split('/'), outpath))
     ids = [x[-1] for x in split_path]
     print(len(ids))
 
     for f in input_files:
+        print(f)
         source_tweet_id = f.split('/')[4]
-        print(source_tweet_id)
+        # print(source_tweet_id)
 
         with open(f, 'r') as infile:
             retweets = json.load(infile)
@@ -80,6 +82,7 @@ def reformat_retweets():
                     outfile = glob.glob(os.path.join('..', '..','..','Data/all-rnr-annotated-threads/*/*/*'))
                     pp(outfile)
                     for outpath in outfile:
+                        print(outpath)
                         if outpath.split('/')[-1] == source_tweet_id:
                             json_path = os.path.join(outpath,'retweets')
                             print("json path ", json_path)

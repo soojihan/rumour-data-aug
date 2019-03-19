@@ -10,11 +10,15 @@ def eval(result_path):
         df = pd.read_csv(f)
         print(df.head())
     print(len(df))
-    df.rename(columns={'binary_label': 'goldlabel'}, inplace=True)
+    df.rename(columns={'label': 'goldlabel'}, inplace=True)
+    df.rename(columns={'sim_score': 'sim_scores'}, inplace=True)
+    # df.rename(columns={'binary_label': 'goldlabel'}, inplace=True)
+
     df[['goldlabel']] = df[['goldlabel']].astype(int)
     # df.sort_values(by='sim_scores', ascending=True, inplace=True)
     threshold_candidates = list(set(df['sim_scores'].values))
     threshold_candidates = [x for x in threshold_candidates if x>=0.5]
+    threshold_candidates.sort(reverse=False)
     print(len(threshold_candidates))
     print(df.head())
     max_F = 0
@@ -28,14 +32,14 @@ def eval(result_path):
         syslabels = df['syslabel'].values
         goldlabels = df['goldlabel'].values
         F, P, R = get_eval_metrics(syslabels, goldlabels)
-        if max_F < F:
-        # if max_P < P:
+        # if max_F < F:
+        if max_P < P:
             max_F = F
             max_P = P
             max_R = R
             optimum_threshold = threshold
-            print("max F-measure: {:0.4f}, P: {:0.4f}, R: {:0.4f}, threshold: {:0.6f}".format(max_F, max_P, max_R, optimum_threshold))
-            # print("max P: {:0.4f}, F: {:0.4f}, R: {:0.4f}, threshold: {:0.6f}".format(max_P, max_F, max_R, optimum_threshold))
+            # print("max F-measure: {:0.4f}, P: {:0.4f}, R: {:0.4f}, threshold: {:0.6f}".format(max_F, max_P, max_R, optimum_threshold))
+            print("max P: {:0.4f}, F: {:0.4f}, R: {:0.4f}, threshold: {:0.6f}".format(max_P, max_F, max_R, optimum_threshold))
 
 
 def get_eval_metrics(syslabels, goldlabels):

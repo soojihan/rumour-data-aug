@@ -188,6 +188,8 @@ def semeval_sem_sim():
     # df.to_csv(os.path.join(outfile,'score.csv'))
 
 def pheme_sem_sim(cand_empty, ref_empty=None ):
+
+    ## Load ELMo embedding dictionaries
     cand_emb = infile_cand
     ref_emb = infile_ref
     f1 = h5py.File(cand_emb, 'r')
@@ -196,18 +198,19 @@ def pheme_sem_sim(cand_empty, ref_empty=None ):
     f2 = h5py.File(ref_emb, 'r')
     print("Keys: %s" % len(f2.keys()))
 
+    ## Load candidates and references
     ref, data = load_pheme_data()
     data = data.drop(cand_empty)
     # data.reset_index(inplace=True, drop=True)
-    if not ref_empty is None:
+    if not ref_empty is None: ## Drop empty references
         ref = ref.drop(ref_empty)
         ref.reset_index(inplace=True, drop=True)
         ref.to_csv(os.path.join(newdf_path, 'dropped_ref.csv'))
-    data.to_csv(os.path.join(newdf_path, 'dropped_df.csv')) # TODO:save the dropped dataframe
+    data.to_csv(os.path.join(newdf_path, 'dropped_df.csv')) # Save the dropped dataframe
     assert len(data) == (len(f1.keys())-1)
     print(list(data))
 
-    for i, ref_k in enumerate(f2.keys()):
+    for i, ref_k in enumerate(f2.keys()): # Iterate reference embeddings
         sim_scores = []
         tweet_id = []
         print(i)
@@ -241,7 +244,7 @@ def pheme_sem_sim(cand_empty, ref_empty=None ):
         df.sort_values(by=['id'], ascending=True)
         print(df.head())
         # outfile = os.path.abspath(os.path.join(os.path.dirname(__file__), '..',  'data/semeval2015/file-embed-output/5.5b-avg'))
-        df.to_csv(os.path.join(score_path,'ref{}_score.csv'.format(ref_k)))
+        df.to_csv(os.path.join(score_path,'ref{}_score.csv'.format(ref_k))) # Save scores per reference tweet
 #
 def eval_results():
     """

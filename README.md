@@ -1,5 +1,9 @@
 # Training data augmentation for rumour detection using context-sensitive neural language model with large credibility corpus
 
+## Rumour Data set
+
+Following Rumour Dataset are used in our experiment.
+
 ## Data Collection
 
 Data collection is performed to collect social-temporal data set on Twitter platform for rumour candidate tweets.

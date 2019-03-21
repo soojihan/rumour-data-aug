@@ -6,7 +6,7 @@ Following Rumour Dataset are used in our experiment.
 
 * [CrisisLexT26](https://github.com/sajao/CrisisLex/tree/master/data/CrisisLexT26): Unlabeled Boston Bombing dataset are obtained from CrisisLexT26 corpus.
 
-* [Twitter event datasets (2012-2016)](https://figshare.com/articles/Twitter_event_datasets_2012-2016_/5100460) : This is the Tweet corpus that is  used as candidate tweets for data augmentation. 
+* [Twitter event datasets (2012-2016)](https://figshare.com/articles/Twitter_event_datasets_2012-2016_/5100460) : This is the Tweet corpus that is  used as candidate tweets for event specific data augmentation. 
 
 ## Data Collection
 

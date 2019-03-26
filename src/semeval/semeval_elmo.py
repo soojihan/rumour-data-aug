@@ -29,7 +29,7 @@ import operator
 import csv
 import string
 # from textcleaner import tokenize_by_word
-from credbankprocessor import preprocessing_tweet_text
+from src.credbankprocessor import preprocessing_tweet_text
 from preprocessing import text_preprocessor
 
 from ast import literal_eval # convert string list to actual list

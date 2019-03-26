@@ -72,6 +72,7 @@ def convert_hydrator_data(event, idfile, tweets):
 
     df = pd.DataFrame(columns=['id', 'created_at','text', 'processed_text'], dtype=str)
     with jsonlines.open(os.path.join(data_path, tweets)) as reader: # load tweets obtained uinsg Hydrator (.jsonl)
+        start = time.time()
         for i, obj in enumerate(reader):
             source_id = obj['id_str']
             text = obj['full_text']
@@ -91,7 +92,10 @@ def convert_hydrator_data(event, idfile, tweets):
                 assert df.loc[len(df)-1 ,'id'] == source_id
                 # df.to_csv(os.path.join(temp_path, 'input-cand.csv'))
                 if i % 1000==0:
+                    end = time.time()
+                    print(end-start)
                     print(i)
+                    print("")
                 assert len(df) == len(processed_ids)
                 with open(os.path.join(temp_path, 'input-cand.pickle'), 'wb') as tf:
                     pickle.dump(df, tf)

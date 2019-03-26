@@ -12,7 +12,7 @@ import pickle
 from ast import literal_eval
 from optparse import OptionParser
 from sys import platform
-
+import jsonlines
 """
 Collect tweets for new events using Twint
 https://github.com/twintproject/twint
@@ -46,7 +46,7 @@ c = t.config(lib_type='twint')
 def search_tweets(keyword, since_t, until_t, output_path):
     c.Since = since_t
     c.Until = until_t
-    # c.Limit = 2000
+    c.Limit = 2000
     c.Search = keyword
     c.Store_json = True
     c.User_full = True
@@ -98,14 +98,20 @@ def main():
         until = str(options.until)
 
     elif platform =='darwin':
-        keywords = ['#ChristchurchTerrorAttack', '#christchurch', '#NewZealandMosqueAttack', '#NewZealandShooting', 'christchurch', 'new zealand']
-        output_path = os.path.join('..', 'data_augmentation/christichurch-shooting')
-        since = '2019-03-15'
-        until = '2019-03-17'
+        # keywords = ['#ChristchurchTerrorAttack', '#christchurch', '#NewZealandMosqueAttack', '#NewZealandShooting', 'christchurch', 'new zealand']
+        keywords = ['#manchesterattack', ' #manchesterbombings', 'manchester', 'manchesterarena']
+        keywords = ['#manchesterattack', ' #manchesterbombings']
+        output_path = os.path.join('..', '..', 'data_augmentation/manchesterbombings')
+        since = '2017-05-22'
+        until = '2017-05-25'
     collect_new_event(keywords, output_path, since, until)
 
 
 main()
 
-
+# dpath = os.path.join('..', '..', 'data_augmentation', 'christchurch-shooting', '#ChristchurchTerrorAttack.json')
+# with jsonlines.open(dpath) as reader:  # load tweets obtained uinsg Hydrator (.jsonl)
+#     for i, obj in enumerate(reader):
+#         print(i, obj)
+#
 

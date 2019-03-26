@@ -11,6 +11,7 @@ import time
 import pickle
 from ast import literal_eval
 from optparse import OptionParser
+from sys import platform
 
 """
 Collect tweets for new events using Twint
@@ -45,7 +46,7 @@ c = t.config(lib_type='twint')
 def search_tweets(keyword, since_t, until_t, output_path):
     c.Since = since_t
     c.Until = until_t
-    c.Limit = 2000
+    # c.Limit = 2000
     c.Search = keyword
     c.Store_json = True
     c.User_full = True
@@ -56,8 +57,7 @@ def search_tweets(keyword, since_t, until_t, output_path):
 
 def collect_new_event(keywords, output_path, since, until):
     start = time.time()
-    # keywords = ['#ChristchurchTerrorAttack', '#christchurch', '#NewZealandMosqueAttack', '#NewZealandShooting', 'christchurch', 'new zealand']
-    # output_path = os.path.join('..', 'data_augmentation/christichurch-shooting')
+
     os.makedirs(output_path, exist_ok=True)
 
     for i, keyword in enumerate(keywords):
@@ -74,28 +74,34 @@ def collect_new_event(keywords, output_path, since, until):
     print("{}".format(time.strftime("%H:%M:%S", time.gmtime(end-start))))
 
 def main():
-    parser = OptionParser()
-    parser.add_option(
-        '--keywords', dest='keywords', default=['#ChristchurchTerrorAttack'],
-        help='List of keywords for searching tweets (list): default=%default')
-    parser.add_option(
-        '--output', dest='output', default='/path/to/store/output',
-        help='Path to save downloaded tweets (string) : default=%default')
-    parser.add_option(
-        '--since', dest='since', default='2019-03-26',
-        help='Filter tweets sent since date (string): default=%default')
-    parser.add_option(
-        '--until', dest='until', default='2019-03-27',
-        help='Filter tweets sent until date (string): default=%default')
+    if platform == 'linux':
+        parser = OptionParser()
+        parser.add_option(
+            '--keywords', dest='keywords', default="['#ChristchurchTerrorAttack']",
+            help='List of keywords for searching tweets (list): default=%default')
+        parser.add_option(
+            '--output', dest='output', default='/path/to/store/output',
+            help='Path to save downloaded tweets (string) : default=%default')
+        parser.add_option(
+            '--since', dest='since', default='2019-03-26',
+            help='Filter tweets sent since date (string): default=%default')
+        parser.add_option(
+            '--until', dest='until', default='2019-03-27',
+            help='Filter tweets sent until date (string): default=%default')
 
-    (options, args) = parser.parse_args()
-    keywords = options.keywords
-    keywords = literal_eval(keywords)
-    print("keywords: {}".format(keywords))
-    output_path = options.output
-    since = str(options.since)
-    until = str(options.until)
+        (options, args) = parser.parse_args()
+        keywords = options.keywords
+        keywords = literal_eval(keywords)
+        print("keywords: {}".format(keywords))
+        output_path = options.output
+        since = str(options.since)
+        until = str(options.until)
 
+    elif platform =='darwin':
+        keywords = ['#ChristchurchTerrorAttack', '#christchurch', '#NewZealandMosqueAttack', '#NewZealandShooting', 'christchurch', 'new zealand']
+        output_path = os.path.join('..', 'data_augmentation/christichurch-shooting')
+        since = '2019-03-15'
+        until = '2019-03-17'
     collect_new_event(keywords, output_path, since, until)
 
 

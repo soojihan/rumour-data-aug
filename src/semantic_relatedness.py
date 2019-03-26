@@ -115,7 +115,6 @@ def load_pheme_data():
     return ref, data
 
 
-
 def remove_empty_lines_from_input(indices):
     """
     Remove empty sentences; ELMo file embed raises error when there're empty strings

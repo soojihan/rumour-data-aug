@@ -15,31 +15,36 @@ def eval(result_path):
     # df.rename(columns={'binary_label': 'goldlabel'}, inplace=True)
 
     df[['goldlabel']] = df[['goldlabel']].astype(int)
+
     # df.sort_values(by='sim_scores', ascending=True, inplace=True)
     threshold_candidates = list(set(df['sim_scores'].values))
-    threshold_candidates = [x for x in threshold_candidates if x>=0.5]
+    # threshold_candidates = [x for x in threshold_candidates if x>=0.5]
     threshold_candidates.sort(reverse=False)
+    # threshold_candidates.sort(reverse=True)
+    print(threshold_candidates)
     print(len(threshold_candidates))
     print(df.head())
     max_F = 0
     max_P = 0
     max_R = 0
+    max_SP = 0
     optimum_threshold = 0
     for threshold in threshold_candidates:
-        # print("Threshold ", threshold)
         df.loc[df[df.sim_scores >= threshold].index, 'syslabel'] = 1
         df.loc[df[df.sim_scores < threshold].index, 'syslabel'] = 0
         syslabels = df['syslabel'].values
         goldlabels = df['goldlabel'].values
-        F, P, R = get_eval_metrics(syslabels, goldlabels)
-        # if max_F < F:
-        if max_P < P:
+        F, P, R, SP = get_eval_metrics(syslabels, goldlabels)
+        if max_F < F:
+        # if max_P < P:
+        # if max_SP < SP:
             max_F = F
             max_P = P
             max_R = R
+            max_SP = SP
             optimum_threshold = threshold
             # print("max F-measure: {:0.4f}, P: {:0.4f}, R: {:0.4f}, threshold: {:0.6f}".format(max_F, max_P, max_R, optimum_threshold))
-            print("max P: {:0.4f}, F: {:0.4f}, R: {:0.4f}, threshold: {:0.6f}".format(max_P, max_F, max_R, optimum_threshold))
+            print("max P: {:0.4f}, F: {:0.4f}, R: {:0.4f}, SP: {:0.4f}, threshold: {:0.6f}".format(max_P, max_F, max_R, max_SP, optimum_threshold))
 
 
 def get_eval_metrics(syslabels, goldlabels):
@@ -47,6 +52,7 @@ def get_eval_metrics(syslabels, goldlabels):
     fp = 0
     tn = 0
     fn = 0
+
     for (i, syslabel) in enumerate(syslabels):
 
         # if syslabel == True and goldlabels[i] == True:
@@ -62,6 +68,7 @@ def get_eval_metrics(syslabels, goldlabels):
     P = tp / (tp + fp)
     R = tp / (tp + fn)
     F = 2 * P * R / (P + R)
-
+    SP = tn / (tn+fp) # Specifity
+    # print("tp {}, fp {}, tn {}, fn {}".format(tp, fp, tn, fn))
     testsize = str(tp + fn + fp + tn)
-    return F, P, R
+    return F, P, R, SP

@@ -13,7 +13,8 @@ from ast import literal_eval
 from optparse import OptionParser
 
 """
-Retreive the top 100 retweets of each context tweet in the Pheme data
+Collect tweets for new events using Twint
+https://github.com/twintproject/twint
 """
 
 pd.set_option('display.expand_frame_repr', False)
@@ -62,7 +63,7 @@ def collect_new_event(keywords, output_path, since, until):
     for i, keyword in enumerate(keywords):
         print("")
         print(i, keyword)
-        if os.path.exists(os.path.join(output_path, "{}.csv".format(keyword))):
+        if os.path.exists(os.path.join(output_path, "{}.json".format(keyword))):
             print("already exists...")
             continue
         else:

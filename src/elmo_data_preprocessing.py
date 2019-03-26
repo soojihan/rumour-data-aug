@@ -3,8 +3,11 @@ import os
 import pandas as pd
 from credbankprocessor import preprocessing_tweet_text
 from pprint import pprint as pp
+from typing import IO, List, Iterable, Tuple
+import pickle
 
-def load_data(event, name='pheme'):
+def load_data(event: str,
+              name: str ='pheme'):
     if name=='pheme':
         ref = os.path.join('..',
                            'data_augmentation/data/pheme_rumour_references/{}.csv'.format(event))
@@ -39,9 +42,10 @@ def load_data(event, name='pheme'):
         return data
 
 
-def prepare_input(name, event):
+def prepare_input(name: str,
+                  event: str):
     """
-    1. Generate input files for ELMO embed_file method; each line contains a sentence tokenized by whitespace.
+    Generate input files for ELMO embed_file method; each line contains a sentence tokenized by whitespace.
     :return: text files (input to ELMo)
     """
     if name == 'semeval':
@@ -64,21 +68,23 @@ def prepare_input(name, event):
     os.makedirs(outfile, exist_ok=True)
     print(outfile)
 
-    for t in tokenised_tweet1:
-        with open(os.path.join(outfile, 'input-cand.txt'), 'a') as f:
-            f.write(t)
-            f.write("\n")
-    f.close()
-
-    for t in tokenised_tweet2:
-        with open(os.path.join(outfile, 'input-ref.txt'), 'a') as f:
-            f.write(t)
-            f.write("\n")
-    f.close()
+    # for t in tokenised_tweet1:
+    #     with open(os.path.join(outfile, 'input-cand.txt'), 'a') as f:
+    #         f.write(t)
+    #         f.write("\n")
+    # f.close()
+    #
+    # for t in tokenised_tweet2:
+    #     with open(os.path.join(outfile, 'input-ref.txt'), 'a') as f:
+    #         f.write(t)
+    #         f.write("\n")
+    # f.close()
 
     print("Done")
 
-def empty_indices(event, t='candidates', action='save'):
+def empty_indices(event: str,
+                  t: str ='candidates',
+                  action: str ='save'):
     """
     ELMo embed_file raises error if there are empty strings --> remove
     :param: event
@@ -108,7 +114,8 @@ def empty_indices(event, t='candidates', action='save'):
         return ids
 
 
-def remove_empty_strings(event, indices):
+def remove_empty_strings(indices: IO,
+                         event: str):
     """
     Remove empty sentences; ELMo file embed raises error when there're empty strings
     :param indices: indices of empty lines
@@ -135,10 +142,10 @@ def remove_empty_strings(event, indices):
         f.close()
 
 
-
 def main():
-    prepare_input(name='pheme', event='sydneysiege')
+    # prepare_input(name='pheme', event='sydneysiege')
     # empty_indices(event='sydneysiege', t='ref', action='save')
-    # remove_empty_lines_from_input(event='sydneysiege', check_empty_indices(event='sydneysiege', action='load', t='candidates'))
+    remove_empty_strings(empty_indices(event='sydney', action='load', t='candidates'), event='sydneysiege')
 
 main()
+

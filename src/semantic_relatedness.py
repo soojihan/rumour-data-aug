@@ -40,118 +40,29 @@ import argparse
 from glob import glob
 import re
 import random
+from sys import platform
+from elmo_data_preprocessing import load_data, empty_indices
+
 
 pd.set_option('display.expand_frame_repr', False)
-
-parser = argparse.ArgumentParser()
-parser.add_argument('--event', help='the name of event')
-parser.add_argument('--infile_cand', help='path to candidates')
-parser.add_argument('--infile_ref', help='path to ref')
-parser.add_argument('--score_path', help='path to save scores')
-parser.add_argument('--newdf', help='path to save dropped df')
-parser.add_argument('--empty_path', help='path to the indices of empty strings')
-# parser.add_argument('--outfile_ref', help='path to store ref embedding')
-# print(parser.format_help())
-
-args = parser.parse_args()
-event = args.event
-infile_cand = args.infile_cand
-infile_ref = args.infile_ref
-score_path = args.score_path
-newdf_path = args.newdf
-empty_indice_path = args.empty_path
-# outfile_cand = args.outfile_cand
-# outfile_ref = args.outfile_ref
-
-
 pd.set_option('display.max_columns', None)
 pd.options.mode.chained_assignment = None
 
-# event = 'ottawa'
 
-#
-
-def load_semeval_data():
-    data_type = "merged_semeval"
-    data_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data/semeval2015/data/{}.csv'.format(data_type))
-    print("data path ", data_path)
-    data = load_csv(data_path)
-    print(len(data))
-    data.drop(['Unnamed: 0'], inplace=True, axis=1)
-    # data.dropna(inplace=True)
-    # data = data[:1001]
-    print(data.isnull().any().any())
-    if data.isnull().any().any():
-        raise ValueError
-    print("the number of rows in the original data: ", len(data))
-
-    return data
-
-def load_pheme_data():
-    ref = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data_augmentation/data/pheme_rumour_references/{}.csv'.format(event))
-    cand = os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                             'data_augmentation/data/candidates/{}.csv'.format(event))
-    # ref = os.path.join(ref_path, '{}_manref_{}.csv'.format(event, batch_num))
-    # cand = os.path.join(data_path, '{}.csv'.format(event))
-
-    ref = load_csv(ref)
-    data = load_csv(cand)
-    print(len(data))
-    print(list(ref))
-    print(list(data))
-    ref = ref[['text']]
-    # ref.drop(['Unnamed: 0'], inplace=True, axis=1)
-    data.drop(['Unnamed: 0'], inplace=True, axis=1)
-    ref.dropna(inplace=True)
-    data.dropna(inplace=True)
-    print("the number of rows in the original data: ", len(data))
-    print("the number of rows in the original reference: ", len(ref))
-    ref.reset_index(inplace=True, drop=True)
-    data.reset_index(inplace=True, drop=True)
-
-    print("the number of rows in the original data: ", len(data))
-    print("the number of rows in the original reference: ", len(ref))
-
-    return ref, data
-
-
-def remove_empty_lines_from_input(indices):
-    """
-    Remove empty sentences; ELMo file embed raises error when there're empty strings
-    :param indices: indices of empty lines
-    :return:
-    """
-    outfile = os.path.abspath(os.path.join(os.path.dirname(__file__), '..',  'data_augmentation/data/file-embed-input/{}'.format(event)))
-
-    with open(os.path.join(outfile, 'input-text2.txt'), 'r') as f:
-        x = f.read().splitlines()
-        lines = [k for k in x if k]
-    f.close()
-    print(len(lines))
-    print(len(indices))
-    print(len(x))
-    assert len(x) == (len(lines)+len(indices))
-
-    for t in lines:
-        with open(os.path.join(outfile, 'input-text2-noempty.txt'), 'a') as f:
-            f.write(t)
-            f.write("\n")
-        f.close()
-
-def semeval_sem_sim():
-    text1_emb = os.path.join(os.path.dirname(__file__), '..', 'data/semeval2015/file-embed-output/5.5b-avg/output-text1.hdf5')
-    text2_emb = os.path.join(os.path.dirname(__file__), '..', 'data/semeval2015/file-embed-output/5.5b-avg/output-text2.hdf5')
-    f1 = h5py.File(text1_emb, 'r')
+def semeval_sem_sim(cand_emd, ref_emd):
+    f1 = h5py.File(cand_emd, 'r')
     print("Keys: %s" % len(f1.keys()))
 
-    f2 = h5py.File(text2_emb, 'r')
+    f2 = h5py.File(ref_emd, 'r')
     print("Keys: %s" % len(f2.keys()))
+
     sim_scores=[]
     tweet_id = []
     gold_labels= []
-    pp(f1.keys())
-    data = load_semeval_data()
+
+    data = load_data(name='semeval')
     print(list(data))
+
     for i, k in enumerate(f1.keys()):
         if i%500==0:
             print(i)
@@ -183,31 +94,32 @@ def semeval_sem_sim():
     print(df.head())
     df.sort_values(by=['id'],ascending=True)
     print(df.head())
-    # outfile = os.path.abspath(os.path.join(os.path.dirname(__file__), '..',  'data/semeval2015/file-embed-output/5.5b-avg'))
-    # df.to_csv(os.path.join(outfile,'score.csv'))
+    outfile = os.path.abspath(os.path.join(os.path.dirname(__file__), '..',  'data/semeval2015/file-embed-output/5.5b-avg'))
+    df.to_csv(os.path.join(outfile, 'score.csv'))
 
-def pheme_sem_sim(cand_empty, ref_empty=None ):
+def pheme_sem_sim(cand_emd, ref_emd, cand_empty, ref_empty, newdf_path, score_path):
 
     ## Load ELMo embedding dictionaries
-    cand_emb = infile_cand
-    ref_emb = infile_ref
-    f1 = h5py.File(cand_emb, 'r')
+    f1 = h5py.File(cand_emd, 'r')
     print("Keys: %s" % len(f1.keys()))
 
-    f2 = h5py.File(ref_emb, 'r')
+    f2 = h5py.File(ref_emd, 'r')
     print("Keys: %s" % len(f2.keys()))
 
     ## Load candidates and references
-    ref, data = load_pheme_data()
-    data = data.drop(cand_empty)
-    # data.reset_index(inplace=True, drop=True)
-    if not ref_empty is None: ## Drop empty references
+    ref, cand = load_data(name="pheme")
+    if cand_empty:
+        cand = cand.drop(cand_empty)
+        cand.reset_index(inplace=True, drop=False)
+        cand.to_csv(os.path.join(newdf_path, 'dropped_candidates.csv')) # Save the dropped dataframe
+
+    if ref_empty: ## Drop empty references
         ref = ref.drop(ref_empty)
-        ref.reset_index(inplace=True, drop=True)
+        ref.reset_index(inplace=True, drop=False)
         ref.to_csv(os.path.join(newdf_path, 'dropped_ref.csv'))
-    data.to_csv(os.path.join(newdf_path, 'dropped_df.csv')) # Save the dropped dataframe
-    assert len(data) == (len(f1.keys())-1)
-    print(list(data))
+
+    assert len(cand) == (len(f1.keys())-1) # dropped df length is equal to the # of keys in embeddings (-1: sentence to index)
+    assert len(ref) == (len(f2.keys()) - 1)
 
     for i, ref_k in enumerate(f2.keys()): # Iterate reference embeddings
         sim_scores = []
@@ -242,8 +154,7 @@ def pheme_sem_sim(cand_empty, ref_empty=None ):
         print(df.head())
         df.sort_values(by=['id'], ascending=True)
         print(df.head())
-        # outfile = os.path.abspath(os.path.join(os.path.dirname(__file__), '..',  'data/semeval2015/file-embed-output/5.5b-avg'))
-        df.to_csv(os.path.join(score_path,'ref{}_score.csv'.format(ref_k))) # Save scores per reference tweet
+        df.to_csv(os.path.join(score_path,'ref-{}_score.csv'.format(ref_k))) # Save scores per reference tweet
 #
 def eval_results():
     """
@@ -254,11 +165,40 @@ def eval_results():
     print(result_path)
     eval(result_path)
 
-# empty_indices_path = os.path.abspath(os.path.join(os.getcwd(), '..', 'data_augmentation/data/candidates'))
-# newdf_path = os.path.abspath(os.path.join(os.getcwd(), '..', 'data_augmentation/data/file-embed-output/ottawa'))
-# print(empty_indices_path)
-with open(os.path.join(empty_indice_path), 'rb') as f:
-    empty_indices = pickle.load(f)
 
-pheme_sem_sim(empty_indices)
+def main():
+    if platform == 'darwin':
+        event = 'sydneysiege'
+        cand_emd = os.path.join('..',
+                               'data_augmentation/data/file-embed-output/{}/output-cand.hdf5'.format(event))
 
+        ref_emd = os.path.join('..',
+                                    'data_augmentation/data/file-embed-output/{}/output-ref.hdf5'.format(event))
+
+        # cand_emd = os.path.join(os.path.dirname(__file__), '..', 'data/semeval2015/file-embed-output/5.5b-avg/output-text1.hdf5')
+        # ref_emd = os.path.join(os.path.dirname(__file__), '..', 'data/semeval2015/file-embed-output/5.5b-avg/output-text2.hdf5')
+        # TODO: define arguments
+
+    elif platform == 'linux':
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--event', help='the name of event')
+        parser.add_argument('--cand_emd', help='ELMo embeddings of candidates ')
+        parser.add_argument('--ref_emd', help='ELMo embeddings of references')
+        parser.add_argument('--score_path', help='path to save semantic relatedness scores')
+        parser.add_argument('--tweet_path', help='Path to save dataframes after dropping empty tweets')
+        parser.add_argument('--empty_path', help='Indices of empty strings')
+
+        args = parser.parse_args()
+        event = args.event
+        cand_emd = args.cand_emd
+        ref_emd = args.ref_emd
+        score_path = args.score_path
+        newdf_path = args.tweet_path
+        empty_indice_path = args.empty_path
+
+    # semeval_sem_sim(cand_emd, ref_emd)
+
+    cand_empty = empty_indices(event=event, t='candidates', action='load')
+    ref_empty = empty_indices(event=event, t='ref', action='load')
+
+main()

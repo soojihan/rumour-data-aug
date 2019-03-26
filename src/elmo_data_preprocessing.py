@@ -6,8 +6,8 @@ from pprint import pprint as pp
 from typing import IO, List, Iterable, Tuple
 import pickle
 
-def load_data(event: str,
-              name: str ='pheme'):
+def load_data(event: str = None,
+              name: str = 'pheme'):
     if name=='pheme':
         ref = os.path.join('..',
                            'data_augmentation/data/pheme_rumour_references/{}.csv'.format(event))
@@ -17,7 +17,6 @@ def load_data(event: str,
         # cand = os.path.join(data_path, '{}.csv'.format(event))
         ref = load_csv(ref)
         data = load_csv(cand)
-        print(ref)
         ref = ref[['text']]
         data.drop(['Unnamed: 0'], inplace=True, axis=1)
         ref.dropna(inplace=True)
@@ -64,21 +63,23 @@ def prepare_input(name: str,
         tokenised_tweet_cand = list(map(lambda x: " ".join(x), processed_cand))
         tokenised_tweet_ref = list(map(lambda x: " ".join(x), processed_ref))
 
+    else:
+        print("Check data name")
     outfile = os.path.abspath(outfile)
     os.makedirs(outfile, exist_ok=True)
     print(outfile)
 
-    # for t in tokenised_tweet1:
-    #     with open(os.path.join(outfile, 'input-cand.txt'), 'a') as f:
-    #         f.write(t)
-    #         f.write("\n")
-    # f.close()
-    #
-    # for t in tokenised_tweet2:
-    #     with open(os.path.join(outfile, 'input-ref.txt'), 'a') as f:
-    #         f.write(t)
-    #         f.write("\n")
-    # f.close()
+    for t in tokenised_tweet1:
+        with open(os.path.join(outfile, 'input-cand.txt'), 'a') as f:
+            f.write(t)
+            f.write("\n")
+    f.close()
+
+    for t in tokenised_tweet2:
+        with open(os.path.join(outfile, 'input-ref.txt'), 'a') as f:
+            f.write(t)
+            f.write("\n")
+    f.close()
 
     print("Done")
 
@@ -109,9 +110,13 @@ def empty_indices(event: str,
 
     elif action =='load':
         print("Loading the indices of empty strings....")
-        with open(os.path.join(outpath, '{}_{}_empty_index.pickle'.format(event, t)), 'rb') as f:
-            ids = pickle.load(f)
-        return ids
+        infile = os.path.join(outpath, '{}_{}_empty_index.pickle'.format(event, t))
+        if os.path.exists(infile):
+            with open(infile, 'rb') as f:
+                ids = pickle.load(f)
+            return ids
+        else:
+            return []
 
 
 def remove_empty_strings(indices: IO,
@@ -143,9 +148,10 @@ def remove_empty_strings(indices: IO,
 
 
 def main():
-    # prepare_input(name='pheme', event='sydneysiege')
+    prepare_input(name='pheme', event='sydneysiege')
     # empty_indices(event='sydneysiege', t='ref', action='save')
-    remove_empty_strings(empty_indices(event='sydney', action='load', t='candidates'), event='sydneysiege')
+    # remove_empty_strings(empty_indices(event='sydney', action='load', t='candidates'), event='sydneysiege')
 
-main()
+if __name__ == '__main__':
+    main()
 

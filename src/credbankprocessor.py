@@ -1,4 +1,5 @@
 import re
+from typing import List
 from gensim.utils import deaccent
 import string
 from nltk.tokenize import TweetTokenizer
@@ -196,7 +197,7 @@ def _clean_text(self, text):
     return "".join(output)
 
 
-def preprocessing_tweet_text(tweet_text):
+def preprocessing_tweet_text(tweet_text) -> List[str]:
     """
     Neural Language Model like ELMo does not need much normalisation. Pre-trained ELMo model only need pre-tokenised text.
 
@@ -208,7 +209,8 @@ def preprocessing_tweet_text(tweet_text):
 
     norm_tweet = tweet_text.lower()
     # remove retweets
-    norm_tweet = re.sub('rt @?[a-zA-Z0-9_]+:?', '', norm_tweet)
+    # norm_tweet = re.sub('rt @?[a-zA-Z0-9_]+:?', '', norm_tweet)
+    norm_tweet = re.sub(r'^(rt)( @\w*)?[: ]', '', norm_tweet)
     # remove URL
     norm_tweet = re.sub(r"http\S+", "", norm_tweet)
     # remove pic URL
@@ -286,7 +288,6 @@ def test():
     pre_tweet_4 = preprocessing_tweet_text(tweet_4)
     print(pre_tweet_4)
 
-# test()
 
 
 #tweet_corpus = load_tweets_from_credbank_csv("C:\\Data\\credbank\\credbank_xai.csv")

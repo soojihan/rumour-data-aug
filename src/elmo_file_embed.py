@@ -56,8 +56,9 @@ def load_elmo(finetuned: bool =True):
     options_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway_5.5B/elmo_2x4096_512_2048cnn_2xhighway_5.5B_options.json"
     if finetuned:
         ## Load weights fine-tuned using CREDBANK
-        weight_file = os.path.join(os.path.dirname(__file__), '..', '..', 'rumourdnn', "resource", "embedding",
-                                            "elmo_model", "weights_12262018.hdf5")
+        # weight_file = os.path.join(os.path.dirname(__file__), '..', '..', 'rumourdnn', "resource", "embedding",
+        #                                     "elmo_model", "weights_12262018.hdf5")
+        weight_file = '/mnt/fastdata/acp16sh/data-aug/data_augmentation/data/resource/embedding/weights_12262018.hdf5'
     else:
         ## Load pre-trained weights
         weight_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway_5.5B/elmo_2x4096_512_2048cnn_2xhighway_5.5B_weights.hdf5"
@@ -75,7 +76,6 @@ def get_elmo_embeddings(infile: IO,
     Compute Elmo embeddings
     :return: hdf5 file (ELMo embeddings per sentence)
     """
-    load_elmo()
     elmo.embed_file(input_file=infile, output_file_path=outfile, output_format=output_format)
 
 
@@ -113,7 +113,9 @@ def main():
         outfile_ref = args.outfile_ref
         elmo_format = args.elmo_format
 
+    load_elmo()
     get_elmo_embeddings(infile=infile_ref, outfile = outfile_ref, output_format=elmo_format)
+    get_elmo_embeddings(infile=infile_cand, outfile = outfile_cand, output_format=elmo_format)
 
 
-# main()
+main()

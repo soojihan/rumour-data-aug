@@ -75,35 +75,37 @@ def collect_new_event(keywords, output_path, since, until):
 
 def main():
     if platform == 'linux':
-        parser = OptionParser()
-        parser.add_option(
-            '--keywords', dest='keywords', default="['#ChristchurchTerrorAttack']",
+        parser = argparse.ArgumentParser()
+        parser.add_argument(
+            '--keywords',  default="['#ChristchurchTerrorAttack']",
             help='List of keywords for searching tweets (list): default=%default')
-        parser.add_option(
-            '--output', dest='output', default='/path/to/store/output',
+        parser.add_argument(
+            '--output', default='/path/to/store/output',
             help='Path to save downloaded tweets (string) : default=%default')
-        parser.add_option(
+        parser.add_argument(
             '--since', dest='since', default='2019-03-26',
             help='Filter tweets sent since date (string): default=%default')
-        parser.add_option(
-            '--until', dest='until', default='2019-03-27',
+        parser.add_argument(
+            '--until', default='2019-03-27',
             help='Filter tweets sent until date (string): default=%default')
 
-        (options, args) = parser.parse_args()
-        keywords = options.keywords
+        args = parser.parse_args()
+        keywords = args.keywords
         keywords = literal_eval(keywords)
         print("keywords: {}".format(keywords))
-        output_path = options.output
-        since = str(options.since)
-        until = str(options.until)
+        output_path = args.output
+        since = str(args.since)
+        until = str(args.until)
 
     elif platform =='darwin':
-        # keywords = ['#ChristchurchTerrorAttack', '#christchurch', '#NewZealandMosqueAttack', '#NewZealandShooting', 'christchurch', 'new zealand']
-        keywords = ['#manchesterattack', ' #manchesterbombings', 'manchester', 'manchesterarena']
-        keywords = ['#manchesterattack', ' #manchesterbombings']
-        output_path = os.path.join('..', '..', 'data_augmentation/manchesterbombings')
-        since = '2017-05-22'
-        until = '2017-05-25'
+        keywords = ['#ChristchurchTerrorAttack', '#christchurch', '#NewZealandMosqueAttack', '#NewZealandShooting', 'christchurch', 'new zealand']
+        # keywords = ['#manchesterattack', '#manchesterbombings', 'manchester', 'manchesterarena']
+        # keywords = ['#manchesterattack', '#manchesterbombings']
+        output_path = os.path.join('..', '..', 'data_augmentation/christ')
+        # since = '2017-05-22'
+        since = '2019-03-17'
+        until = '2019-03-20'
+
     collect_new_event(keywords, output_path, since, until)
 
 

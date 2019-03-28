@@ -14,31 +14,31 @@ def load_data(event: str = None,
     print("Loading data...")
     if name=='pheme':
         if ref:
-            ref = os.path.join('..',
+            ref_d = os.path.join('..',
                            'data_augmentation/data/pheme_rumour_references/{}.csv'.format(event))
             # ref = os.path.join(ref_path, '{}.csv'.format(event))
-            ref = load_csv(ref)
-            ref = ref[['text']]
-            ref.dropna(inplace=True)
-            ref.reset_index(inplace=True, drop=True)
-            print("Number of original references: ", len(ref))
+            ref_d = load_csv(ref_d)
+            ref_d = ref_d[['text']]
+            ref_d.dropna(inplace=True)
+            ref_d.reset_index(inplace=True, drop=True)
+            print("Number of original references: ", len(ref_d))
 
         if cand:
-            cand = os.path.join('..',
+            cand_d = os.path.join('..',
                             'data_augmentation/data/candidates/{}.csv'.format(event))
             # cand = os.path.join(data_path, '{}.csv'.format(event))
-            data = load_csv(cand)
+            data = load_csv(cand_d)
             data.drop(['Unnamed: 0'], inplace=True, axis=1)
             data.dropna(inplace=True)
             data.reset_index(inplace=True, drop=True)
             print("Number of original candidates: ", len(data))
 
         if ref and cand:
-            return ref, data
+            return ref_d, data
         elif ref and not cand:
-            return ref
+            return ref_d
         elif cand and not ref:
-            return cand
+            return data
         else:
             print("Check dataset type ")
 
@@ -58,28 +58,30 @@ def load_data(event: str = None,
     elif name=='augmented':
         if ref:
             # ref = os.path.join('..', 'data_augmentation/data/pheme_annotations/{}-all-rnr-threads.csv'.format(event))
-            ref = os.path.join('..', 'data_augmentation/data/pheme_rumour_references/{}.csv'.format(event))
-            ref = load_csv(ref)
-            ref= ref[['text']]
+            # ref = os.path.join('..', 'data_augmentation/data/pheme_rumour_references/{}.csv'.format(event))
+            ref_d = os.path.join('..', 'data_augmentation/data/ref/{}.csv'.format(event))
+            print(os.path.abspath(ref_d))
+            ref_d = load_csv(ref_d)
+            ref_d = ref_d[['text']]
             # ref = ref[['text', 'label']]
             # ref = ref[ref['label']=='1']
-            ref.dropna(inplace=True)
-            ref.reset_index(inplace=True, drop=True)
-            print("Number of original references: ", len(ref))
+            ref_d.dropna(inplace=True)
+            ref_d.reset_index(inplace=True, drop=True)
+            print("Number of original references: ", len(ref_d))
 
         if cand:
             data = os.path.join('..', 'data_augmentation/data_hydrator/saved_data/source-tweets/{}/input-cand.pickle'.format(event))
             with open(os.path.join(data), 'rb') as tf:
-                cand = pickle.load(tf)
+                data = pickle.load(tf)
                 tf.close()
-            print("Number of original candidates: ", len(cand))
+            print("Number of original candidates: ", len(data))
 
         if ref and cand:
-            return ref, data
+            return ref_d, data
         elif ref and not cand:
-            return ref
+            return ref_d
         elif cand and not ref:
-            return cand
+            return data
         else:
             print("Check dataset type ")
 
@@ -125,18 +127,19 @@ def preprocess_main(name: str,
         f.close()
 
     elif (name=='augmented') or (name=='pheme'):
-        # data, ref = load_data(name=name, event=event)
-        data = load_data(name=name, event=event, cand=True, ref=False)
+        ref_d = load_data(name=name, event=event, cand = cand, ref= ref)
+        # data = load_data(name=name, event=event, cand=True, ref=False)
         outfile = os.path.abspath(
             os.path.join('..', 'data_augmentation/data_hydrator/file-embed-input/{}'.format(event)))
             # os.path.join('..', 'data_augmentation/data/file-embed-input/{}'.format(event)))
         os.makedirs(outfile, exist_ok=True)
         print(outfile)
+
         if ref:
-            tokenised_ref, ref_blank = preprocess_tweets(ref['text'])
-            ref['processed_text'] = tokenised_ref
-            new_ref = ref.drop(ref_blank)
-            assert len(new_ref) + len(ref_blank) == len(ref)
+            tokenised_ref, ref_blank = preprocess_tweets(ref_d['text'])
+            ref_d['processed_text'] = tokenised_ref
+            new_ref = ref_d.drop(ref_blank)
+            assert len(new_ref) + len(ref_blank) == len(ref_d)
             new_ref.reset_index(inplace=True)
 
             with open(os.path.join(outfile, 'input-ref-processed.pickle'), 'wb') as tf:
@@ -197,9 +200,9 @@ def prepare_input(outpath: str,
 
 def main():
     event = 'manchesterbombings'
-    # preprocess_main(name='augmented', event=event)
+    # preprocess_main(name='augmented', event=event, cand=False)
     outpath = os.path.abspath(os.path.join('..', 'data_augmentation/data_hydrator/file-embed-input/{}'.format(event)))
-    prepare_input(outpath=outpath, event=event)
+    prepare_input(outpath=outpath, event=event, cand=False)
 
 
 if __name__ == '__main__':

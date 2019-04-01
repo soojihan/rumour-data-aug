@@ -7,6 +7,12 @@ from typing import IO, List, Iterable, Tuple
 import pickle
 import numpy as np
 
+
+pd.set_option('display.expand_frame_repr', False)
+pd.set_option('display.max_columns', None)
+pd.options.mode.chained_assignment = None
+
+
 def load_data(event: str = None,
               name: str = 'pheme',
               cand: bool = True,
@@ -36,9 +42,9 @@ def load_data(event: str = None,
         if ref and cand:
             return ref_d, data
         elif ref and not cand:
-            return ref_d
+            return ref_d, None
         elif cand and not ref:
-            return data
+            return None, data
         else:
             print("Check dataset type ")
 
@@ -57,20 +63,21 @@ def load_data(event: str = None,
 
     elif name=='augmented':
         if ref:
-            # ref = os.path.join('..', 'data_augmentation/data/pheme_annotations/{}-all-rnr-threads.csv'.format(event))
-            # ref = os.path.join('..', 'data_augmentation/data/pheme_rumour_references/{}.csv'.format(event))
-            ref_d = os.path.join('..', 'data_augmentation/data/ref/{}.csv'.format(event))
+            # ref_d = os.path.join('..', 'data_augmentation/data/pheme_annotations/{}-all-rnr-threads.csv'.format(event))
+            ref_d = os.path.join('..', 'data_augmentation/data/pheme_rumour_references/{}.csv'.format(event))
+            # ref_d = os.path.join('..', 'data_augmentation/data/ref/{}.csv'.format(event))
             print(os.path.abspath(ref_d))
             ref_d = load_csv(ref_d)
             ref_d = ref_d[['text']]
-            # ref = ref[['text', 'label']]
-            # ref = ref[ref['label']=='1']
+            # ref_d = ref_d[['text', 'label']]
+            # ref_d = ref_d[ref_d['label']=='0']
             ref_d.dropna(inplace=True)
             ref_d.reset_index(inplace=True, drop=True)
             print("Number of original references: ", len(ref_d))
 
         if cand:
-            data = os.path.join('..', 'data_augmentation/data_hydrator/saved_data/source-tweets/{}/input-cand.pickle'.format(event))
+            # data = os.path.join('..', 'data_augmentation/data_hydrator/saved_data/source-tweets/{}/input-cand.pickle'.format(event))
+            data = os.path.join('..', 'data_augmentation/data_hydrator/saved_data/source-tweets/{}/input-cand-user.pickle'.format(event))
             with open(os.path.join(data), 'rb') as tf:
                 data = pickle.load(tf)
                 tf.close()
@@ -79,9 +86,9 @@ def load_data(event: str = None,
         if ref and cand:
             return ref_d, data
         elif ref and not cand:
-            return ref_d
+            return ref_d, None
         elif cand and not ref:
-            return data
+            return None, data
         else:
             print("Check dataset type ")
 
@@ -127,7 +134,7 @@ def preprocess_main(name: str,
         f.close()
 
     elif (name=='augmented') or (name=='pheme'):
-        ref_d = load_data(name=name, event=event, cand = cand, ref= ref)
+        ref_d, data = load_data(name=name, event=event, cand = cand, ref= ref)
         # data = load_data(name=name, event=event, cand=True, ref=False)
         outfile = os.path.abspath(
             os.path.join('..', 'data_augmentation/data_hydrator/file-embed-input/{}'.format(event)))
@@ -140,7 +147,7 @@ def preprocess_main(name: str,
             ref_d['processed_text'] = tokenised_ref
             new_ref = ref_d.drop(ref_blank)
             assert len(new_ref) + len(ref_blank) == len(ref_d)
-            new_ref.reset_index(inplace=True)
+            new_ref.reset_index(inplace=True, drop=True)
 
             with open(os.path.join(outfile, 'input-ref-processed.pickle'), 'wb') as tf:
                 pickle.dump(new_ref, tf)
@@ -151,7 +158,7 @@ def preprocess_main(name: str,
             data['processed_text'] = tokenised_cand
             new_cand = data.drop(cand_blank)
             assert len(new_cand)+len(cand_blank) == len(data)
-            new_cand.reset_index(inplace=True)
+            new_cand.reset_index(inplace=True, drop=True)
 
             with open(os.path.join(outfile, 'input-cand-processed.pickle'), 'wb') as tf:
                 pickle.dump(new_cand, tf)
@@ -178,6 +185,7 @@ def prepare_input(outpath: str,
             df = pickle.load(tf)
             tf.close()
         print(len(df))
+        pp(list(df))
         print(df.head())
 
         with open(os.path.join(outpath, 'elmo_{}_input.txt'.format(t)), 'w') as f:
@@ -197,14 +205,56 @@ def prepare_input(outpath: str,
             #         raise SystemExit
 
 
+def add_user_info(event: str):
+    """
+    Add user infor (screen name and id) for collecting contexts
+    Should be skipped when input-cand.pickle contains users' screen names and ids (see /src/source-tweets/prepare_candidates.py)
+    :param event:
+    :return:
+    """
 
+    user_data = os.path.join('..',
+                        'data_augmentation/data_hydrator/saved_data/source-tweets/{}/input-cand-user.pickle'.format(
+                            event))
+    with open(os.path.join(user_data), 'rb') as tf:
+        user_data = pickle.load(tf)
+        tf.close()
+    print("Number of original candidates: ", len(user_data))
+    print(list(user_data))
+    data = os.path.abspath(
+        os.path.join('..', 'data_augmentation/data_hydrator/file-embed-input/{}/input-cand-processed.pickle'.format(event)))
+
+    with open(os.path.join(data), 'rb') as tf:
+        data = pickle.load(tf)
+        tf.close()
+    print("Number of original candidates: ", len(data))
+    print(list(data))
+    data.set_index('index', inplace=True)
+    print(data[10000:50000])
+    new_data = user_data[user_data.index.isin(data.index)]
+
+    print(new_data[10000:50000])
+    assert len(new_data) == len(data)
+    if not data[['id', 'text']].equals(new_data[['id', 'text']]):
+        raise AssertionError
+
+    final_df = pd.concat([new_data, data[['processed_text']]], axis=1)
+    final_df.reset_index(inplace=True, drop=True)
+    print(final_df[10000:50000])
+    outfile = os.path.abspath(
+        os.path.join('..', 'data_augmentation/data_hydrator/file-embed-input/{}'.format(event)))
+    print(outfile)
+    with open(os.path.join(outfile, 'input-cand-user-processed.pickle'), 'wb') as tf:
+        pickle.dump(final_df, tf)
+        tf.close()
+    #
 def main():
-    event = 'manchesterbombings'
-    # preprocess_main(name='augmented', event=event, cand=False)
+    event = 'ferguson'
+    # preprocess_main(name='augmented', event=event, cand=True, ref=True)
     outpath = os.path.abspath(os.path.join('..', 'data_augmentation/data_hydrator/file-embed-input/{}'.format(event)))
-    prepare_input(outpath=outpath, event=event, cand=False)
+    prepare_input(outpath=outpath, event=event, ref=True, cand=False)
 
 
 if __name__ == '__main__':
     main()
-
+    # add_user_info(event='sydneysiege')

@@ -29,12 +29,14 @@ def data_augmentation(event: str = 'sydneysiege'):
 
     pos_threshold = 0.801806
     precision = 9003
-    neg_threshold = 0.3
+    neg_threshold = 0.266
     pos_scores={}
     neg_scores={}
     # files = files[:2]
-    for f in files: # Iter results for each reference tweet
+    print(len(files))
+    for findex, f in enumerate(files): # Iter results for each reference tweet
         df = pd.read_csv(f)
+        print(findex)
 
         ## Select positive examples using a fine-tuned threshold
         pos_subset = df[df['sim_score'] >= pos_threshold]
@@ -44,17 +46,12 @@ def data_augmentation(event: str = 'sydneysiege'):
         ## Sample negative examples
         # TODO: Improve a method for sampling negative examples
         neg_subset = df[df['sim_score'] < neg_threshold]
-        # false_neg_subset = df[df['sim_score']>=neg_threshold]
-        # false_neg_subset = df[df['sim_score'] <= neg_threshold]
         sub_neg_ids = set(neg_subset['id'].astype(int).values)
-        # false_neg_ids = list(false_neg_subset['id'].values)
 
         # Update sampled ids.
         pos_ids.update(sub_pos_ids)
         neg_ids.update(sub_neg_ids)
         print("Updated negative indices ", len(neg_ids))
-        # neg_ids -= set(false_neg_ids)
-        # print("After removing false indices ", len(neg_ids))
 
         ## Generate a dictionary semantic relatedness scores
         for pi, prow in pos_subset.iterrows():
@@ -83,7 +80,7 @@ def data_augmentation(event: str = 'sydneysiege'):
     print("Number of negative scores ", len(neg_scores.items()))
     total_scores = pos_scores.copy()
     total_scores.update(neg_scores)
-    assert len(total_scores.items()) == (len(pos_scores.items())+ len(neg_scores.items()))
+    print(len(total_scores))
 
     print("")
 
@@ -91,7 +88,7 @@ def data_augmentation(event: str = 'sydneysiege'):
     # infile = '/Users/suzie/Desktop/PhD/Projects/data-aug/data_augmentation/data/file-embed-output/{}/'.format(event)
     infile = os.path.join('..', 'data_augmentation/data_hydrator/file-embed-output/{}/'.format(event))
     _, cand = load_data(event=event)
-    cand.drop(['index'], axis=1, inplace=True) ## TODO: add drop=True when generating candidate set in elmo_data_preprocessing.py
+    # cand.drop(['index'], axis=1, inplace=True) ## TODO: add drop=True when generating candidate set in elmo_data_preprocessing.py
     cand['index'] = np.arange(len(cand)) ## score dfs' ids are associated with row numbers of the candidate set
     assert len(cand)==len(df)
 
@@ -100,13 +97,15 @@ def data_augmentation(event: str = 'sydneysiege'):
     # print("Total number of candidates ", len(total_indices))
 
     ## Set the number of negative samples to be saved
-    random_neg_indices = random.sample(neg_ids, num_pos*3)
+    num_sample = min(num_pos * 3, len(neg_ids))
+    random_neg_indices = random.sample(neg_ids, num_sample)
 
     ## Find intersection -> if a tweet appears in both negative and positive samples, remove it from negative set
     intersection = pos_ids.intersection(random_neg_indices)
     print("before removing intersection ", len(intersection), len(random_neg_indices))
     random_neg_indices = set(random_neg_indices)-intersection
     print("after removing intersection ", len(random_neg_indices))
+    # assert len(total_scores.items()) == (len(pos_scores.items())+ len(neg_scores.items()))
 
     ## Generate final input df
     # cand.drop(['Unnamed: 0'], inplace=True, axis=1)
@@ -140,17 +139,33 @@ def data_augmentation(event: str = 'sydneysiege'):
 
     # save_path = os.path.join(infile, 'results_p{}<0.3'.format(precision))
     # os.makedirs(save_path, exist_ok=True)
-    result.to_csv(os.path.join(infile, '{}-{}.csv'.format(event, precision)))
+    result.to_csv(os.path.join(infile, '{}-{}.csv'.format(precision, neg_threshold)))
     with open(os.path.join(infile, '{}-{}.pickle'.format(precision, neg_threshold)), 'wb') as f:
         pickle.dump(result, f)
-# TODO: a tweet can be a rumour for a reference but a non-rumour for another reference --> consier it as a rumour
 
-data_augmentation(event='germanwings')
+def manual_inspection(event: str):
+    infile = os.path.join('..', 'data_augmentation/data_hydrator/file-embed-output/{}/'.format(event))
+    with open(os.path.join(infile, '{}-{}.pickle'.format(9003, 0.266)), 'rb') as f:
+        df = pickle.load(f)
+    ids = df['id']
+    duple = df[ids.isin(ids[ids.duplicated()])].sort_values("id")
+    print(len(duple))
 
-event = 'germanwings'
-infile = os.path.join('..', 'data_augmentation/data_hydrator/file-embed-output/{}/'.format(event))
-with open(os.path.join(infile, '{}-{}.pickle'.format(9003, 0.3)), 'rb') as f:
-    df = pickle.load(f)
-ids = df['id']
-duple = df[ids.isin(ids[ids.duplicated()])].sort_values("id")
-print(len(duple))
+    pos = df[df.label == 1]
+    random_ids = random.sample(list(pos['index'].values), 30)
+    pos = pos[pos.index.isin(random_ids)]
+    for t, s in zip(pos.text.values, pos.score.values):
+        print(t, s)
+        print("")
+    print("*" * 20)
+    pos = df[df.label == 0]
+    random_ids = random.sample(list(pos['index'].values), 30)
+    pos = pos[pos.index.isin(random_ids)]
+    for t, s in zip(pos.text.values, pos.score.values):
+        print(t, s)
+        print("")
+
+event = 'bostonbombings'
+
+data_augmentation(event=event)
+manual_inspection(event)

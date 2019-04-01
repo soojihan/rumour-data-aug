@@ -35,8 +35,8 @@ def eval(result_path):
         syslabels = df['syslabel'].values
         goldlabels = df['goldlabel'].values
         F, P, R, SP = get_eval_metrics(syslabels, goldlabels)
-        if max_F < F:
-        # if max_P < P:
+        # if max_F < F:
+        if max_P <= P:
         # if max_SP < SP:
             max_F = F
             max_P = P

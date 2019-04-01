@@ -161,8 +161,12 @@ def load_data(event):
     :param event:
     :return:
     """
-    dpath = '/mnt/fastdata/acp16sh/data-aug/data_augmentation/data/data_hydrator/file-embed-input/{}'.format(event)
-    cand = os.path.join(dpath, 'input-cand-processed.pickle')
+    if platform == 'linux':
+        dpath = '/mnt/fastdata/acp16sh/data-aug/data_augmentation/data/data_hydrator/file-embed-input/{}'.format(event)
+    elif platform == 'darwin':
+        dpath = os.path.join('..', 'data_augmentation/data_hydrator/file-embed-input/{}'.format(event))
+
+    cand = os.path.join(dpath, 'input-cand-user-processed.pickle')
     with open(os.path.join(cand), 'rb') as tf:
         cand = pickle.load(tf)
         tf.close()
@@ -177,7 +181,14 @@ def load_data(event):
     return ref, cand
 
 def hydrator_sem_sim(event, cand_emd, ref_emd,  score_path):
-
+    """
+    Compute semantic relatedness of Hydrator tweets
+    :param event:
+    :param cand_emd:
+    :param ref_emd:
+    :param score_path:
+    :return:
+    """
     ## Load ELMo embedding dictionaries
     f1 = h5py.File(cand_emd, 'r')
     print("Keys: %s" % len(f1.keys()))
@@ -274,4 +285,6 @@ def main():
     # cand_empty = empty_indices(event=event, t='candidates', action='load')
     # ref_empty = empty_indices(event=event, t='ref', action='load')
 
-main()
+if __name__ == '__main__':
+    # main()
+    eval_results()

@@ -219,7 +219,7 @@ def add_user_info(event: str):
     with open(os.path.join(user_data), 'rb') as tf:
         user_data = pickle.load(tf)
         tf.close()
-    print("Number of original candidates: ", len(user_data))
+    print("Number of original candidates with user info: ", len(user_data))
     print(list(user_data))
     data = os.path.abspath(
         os.path.join('..', 'data_augmentation/data_hydrator/file-embed-input/{}/input-cand-processed.pickle'.format(event)))
@@ -227,7 +227,7 @@ def add_user_info(event: str):
     with open(os.path.join(data), 'rb') as tf:
         data = pickle.load(tf)
         tf.close()
-    print("Number of original candidates: ", len(data))
+    print("Number of processed candidates w/o user info: ", len(data))
     print(list(data))
     data.set_index('index', inplace=True)
     print(data[10000:50000])
@@ -247,14 +247,75 @@ def add_user_info(event: str):
     with open(os.path.join(outfile, 'input-cand-user-processed.pickle'), 'wb') as tf:
         pickle.dump(final_df, tf)
         tf.close()
-    #
-def main():
+
+def split_elmo_input():
+    """
+    Due to resource restriction of Sharc,  elmo input files should be separated when jobs are killed
+    :return:
+    """
     event = 'ferguson'
-    # preprocess_main(name='augmented', event=event, cand=True, ref=True)
     outpath = os.path.abspath(os.path.join('..', 'data_augmentation/data_hydrator/file-embed-input/{}'.format(event)))
-    prepare_input(outpath=outpath, event=event, ref=True, cand=False)
+    print(outpath)
+    t = 'cand'
+    batch_size = 788900
+    with open(os.path.join(outpath, 'elmo_{}_input.txt'.format(t)), 'r') as f:
+        lines = f.read().splitlines()
+        lines1 = lines[:3155558]
+        print(len(lines1))
+
+        for i in range(4):
+            print(i * batch_size, (i + 1) * batch_size)
+            batch = lines1[i * batch_size: (i + 1) * batch_size]
+            print(batch[0])
+            print(batch[-1])
+            print(len(batch))
+            print("")
+
+            with open(os.path.join(outpath, 'elmo_cand_input_part1-{}.txt'.format(i)), 'w') as f:
+                for l in lines1:
+                    f.write(l)
+                    f.write('\n')
+                f.close()
+
+
+def main():
+    event = 'germanwings'
+    preprocess_main(name='augmented', event=event, cand=True, ref=True)
+    # outpath = os.path.abspath(os.path.join('..', 'data_augmentation/data_hydrator/file-embed-input/{}'.format(event)))
+    # prepare_input(outpath=outpath, event=event, ref=True, cand=False)
 
 
 if __name__ == '__main__':
-    main()
+    # main()
     # add_user_info(event='sydneysiege')
+    split_elmo_input()
+# event='bostonbombings'
+# #
+# data = os.path.join('..',
+#                     'data_augmentation/data_hydrator/file-embed-input/{}/input-cand-user-processed.pickle'.format(event))
+# with open(os.path.join(data), 'rb') as tf:
+#     data = pickle.load(tf)
+#     tf.close()
+# print("Number of processed candidates: ", len(data))
+#
+#
+# data = os.path.join('..',
+#                     'data_augmentation/data_hydrator/file-embed-input/{}/input-ref-processed.pickle'.format(event))
+# with open(os.path.join(data), 'rb') as tf:
+#     data = pickle.load(tf)
+#     tf.close()
+# print("Number of processed ref: ", len(data))
+#
+# outpath = os.path.abspath(os.path.join('..', 'data_augmentation/data_hydrator/file-embed-input/{}'.format(event)))
+# print(outpath)
+# t = 'cand'
+# with open(os.path.join(outpath, 'elmo_{}_input.txt'.format(t)), 'r') as f:
+#     lines = f.read().splitlines()
+#     print(len(lines))
+#     f.close()
+#
+# t = 'ref'
+# with open(os.path.join(outpath, 'elmo_{}_input.txt'.format(t)), 'r') as f:
+#     lines = f.read().splitlines()
+#     print(len(lines))
+#     f.close()

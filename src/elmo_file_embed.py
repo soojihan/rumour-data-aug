@@ -114,7 +114,7 @@ def main():
         elmo_format = args.elmo_format
 
     load_elmo()
-    get_elmo_embeddings(infile=infile_ref, outfile = outfile_ref, output_format=elmo_format)
+    # get_elmo_embeddings(infile=infile_ref, outfile = outfile_ref, output_format=elmo_format)
     get_elmo_embeddings(infile=infile_cand, outfile = outfile_cand, output_format=elmo_format)
 
 

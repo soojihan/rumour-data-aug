@@ -7,6 +7,7 @@ import numpy as np
 import pickle
 from collections import Counter
 from pprint import pprint as pp
+import jsonlines
 
 def data_augmentation(event: str = 'sydneysiege'):
     """
@@ -22,6 +23,21 @@ def data_augmentation(event: str = 'sydneysiege'):
 
     :return:
     """
+
+    ## Load tweet objects to collect ids of tweets with retweets
+    jsonl_file = os.path.join('..', 'data_augmentation/data_hydrator/downloaded_data/hydrator/{}.jsonl'.format(event))
+    jsonl_reader = jsonlines.open(jsonl_file)
+    has_retweets = set()
+    with jsonlines.open(jsonl_file) as reader:  # load tweets obtained uinsg Hydrator (.jsonl)
+        for i, obj in enumerate(reader):
+            if obj['retweet_count'] >0:
+                has_retweets.add(obj['id_str'])
+
+        reader.close()
+    print("Number of tweets that have retweets ", len(has_retweets))
+
+
+    # raise SystemExit
     # files = glob(os.path.join(os.path.dirname(__file__), '..', 'data_augmentation/data/file-embed-output/{}/scores/ref*.csv'.format(event)))
     files = glob(os.path.join(os.path.dirname(__file__), '..', 'data_augmentation/data_hydrator/file-embed-output/{}/scores/ref*.csv'.format(event)))
     pos_ids = set()
@@ -84,7 +100,6 @@ def data_augmentation(event: str = 'sydneysiege'):
 
     print("")
 
-    num_pos = len(pos_ids)
     # infile = '/Users/suzie/Desktop/PhD/Projects/data-aug/data_augmentation/data/file-embed-output/{}/'.format(event)
     infile = os.path.join('..', 'data_augmentation/data_hydrator/file-embed-output/{}/'.format(event))
     _, cand = load_data(event=event)
@@ -96,6 +111,23 @@ def data_augmentation(event: str = 'sydneysiege'):
     # total_indices = list(full_df.index)
     # print("Total number of candidates ", len(total_indices))
 
+
+    ## Generate final input df
+    # cand.drop(['Unnamed: 0'], inplace=True, axis=1)
+
+    ## Leave tweet ids which have high simliarity scores and retweets
+    pos_subset = cand[(cand.index.isin(pos_ids))&(cand.id.isin(has_retweets))]
+    # pos_subset = cand[(cand.index.isin(pos_ids))]
+    pos_subset['label'] = np.ones(len(pos_subset), dtype=int)
+    print("--------------------------------------")
+    print("Number of positive sampes ", len(pos_subset))
+    ## Check duplicates
+    ids = pos_subset['id']
+    duple = pos_subset[ids.isin(ids[ids.duplicated()])].sort_values("id")
+    print("Positive duplicates ", len(duple))
+
+    num_pos = len(pos_subset)
+
     ## Set the number of negative samples to be saved
     num_sample = min(num_pos * 3, len(neg_ids))
     random_neg_indices = random.sample(neg_ids, num_sample)
@@ -103,19 +135,9 @@ def data_augmentation(event: str = 'sydneysiege'):
     ## Find intersection -> if a tweet appears in both negative and positive samples, remove it from negative set
     intersection = pos_ids.intersection(random_neg_indices)
     print("before removing intersection ", len(intersection), len(random_neg_indices))
-    random_neg_indices = set(random_neg_indices)-intersection
+    random_neg_indices = set(random_neg_indices) - intersection
     print("after removing intersection ", len(random_neg_indices))
     # assert len(total_scores.items()) == (len(pos_scores.items())+ len(neg_scores.items()))
-
-    ## Generate final input df
-    # cand.drop(['Unnamed: 0'], inplace=True, axis=1)
-    pos_subset = cand[cand.index.isin(pos_ids)]
-    pos_subset['label'] = np.ones(num_pos, dtype=int)
-
-    ## Check duplicates
-    ids = pos_subset['id']
-    duple = pos_subset[ids.isin(ids[ids.duplicated()])].sort_values("id")
-    print("Positive duplicates ", len(duple))
 
     # neg_subset = cand.loc[random_neg_indices]
     neg_subset = cand[cand['index'].isin(random_neg_indices)]
@@ -168,4 +190,4 @@ def manual_inspection(event: str):
 event = 'bostonbombings'
 
 data_augmentation(event=event)
-manual_inspection(event)
+# manual_inspection(event)

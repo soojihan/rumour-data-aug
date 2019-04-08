@@ -21,7 +21,7 @@ Scrape reply ids of source tweets
 """
 pattern = '\d+'
 re.compile(pattern)
-
+pd.option_context('display.max_rows', None)
 def init_driver():
     # initiate the driver:
     chrome_options = webdriver.ChromeOptions()
@@ -30,6 +30,7 @@ def init_driver():
     chrome_options.add_argument('--disable-setuid-sandbox')
 
     driver = webdriver.Chrome(os.path.join(os.getcwd(), 'chromedriver'), options=chrome_options)
+    # driver = webdriver.Chrome(os.path.join(os.getcwd(), 'chromedriver'))
 
     # set a default wait time for the browser [5 seconds here]:
     driver.wait = WebDriverWait(driver, 5)
@@ -137,7 +138,6 @@ def extract_tweets(page_source):
             # Tweet Replies
             reply_span = li.select("span.ProfileTweet-action--reply > span.ProfileTweet-actionCount > span.ProfileTweet-actionCountForAria" )
             # reply_span = li.select("span.ProfileTweet-action--reply > span.ProfileTweet-actionCount")
-            print(reply_span)
             if reply_span is not None and len(reply_span) > 0:
                 reply_id = reply_span[0]['id']
                 id = re.findall(pattern, reply_id)
@@ -160,76 +160,163 @@ def load_abs_path(data_path: str)-> str:
 
     return data_path
 
-if __name__ == "__main__":
-    # start a driver for a web browser:
+def reply_scraper_main(sampled_tweets, outpath):
 
-
-    files = glob(os.path.join('..', '..', 'data_augmentation', 'data', 'file-embed-output', 'boston', 'results_p9003<0.3', 'boston-9003.csv'))
-    pp(files)
-    #
-    outpath = os.path.abspath(os.path.join(os.getcwd(), '..', 'data_augmentation', 'data', 'augmented_data', 'boston-9003-part2'))
-    print(outpath)
-
-
-
-    os.makedirs(outpath, exist_ok=True)
     driver = init_driver()
-
     # log in to twitter (replace username/password with your own):
-    username = ''
-    password = ''
+    username = 'mujisuji'
+    password = 'london2paris'
     login_twitter(driver, username, password)
 
-    for f in files:
-        df = pd.read_csv(f)
-        print(list(df))
-        print(len(df))
-        very_start = time.time()
-        for i, row in df.iterrows():
-            start = time.time()
-            user_name = row['screen_name'] # source tweet username
-            tweet_id = str(int(row['id'])) # source tweet id
-            print(i, tweet_id)
+    with open(sampled_tweets, 'rb') as f:
+        df = pickle.load(f)
+    df.reset_index(inplace=True)
+    print(list(df))
+    print(len(df))
+    print(df.head())
 
-            label = row['label']
-            if os.path.exists(os.path.join(outpath, 'non-rumours', '{}'.format(tweet_id))) or \
-                    os.path.exists(os.path.join(outpath, 'rumours', '{}'.format(tweet_id))):
-                print("Already exists.. pass ")
-                continue
+    # raise SystemExit
+    ## Sort data chronogically
+    df['created_at'] = pd.to_datetime(df['created_at'])
+    df.sort_values(by='created_at', inplace=True)
+    ## Drop duplicates
+    df.drop_duplicates(subset='text', inplace=True, keep='first')
+    print(df.head())
+    df.reset_index(inplace=True, drop=True)
+    # print(df)
+    # print(df[df['level_0']==117641])
+    print("Number of tweets after deduplication", len(df))
+    df = df[22658:] # sydneysiege
 
-            page_source = search_twitter(driver, user_name, tweet_id)
-            if page_source is None:
-                print("empty replies")
-                print("")
-                continue
+    very_start = time.time()
+    for i, row in df.iterrows():
+
+        start = time.time()
+        user_name = row['screen_name']  # source tweet username
+        tweet_id = row['id']  # source tweet id
+        print(i, row['level_0'], tweet_id)
+        # print(row['text'])
+
+        label = row['label']
+        if os.path.exists(os.path.join(outpath, 'non-rumours', '{}'.format(tweet_id))) or \
+                os.path.exists(os.path.join(outpath, 'rumours', '{}'.format(tweet_id))):
+            print("Already exists.. pass ")
+            continue
+
+        page_source = search_twitter(driver, user_name, tweet_id)
+        if page_source is None:
+            print("empty replies")
+            print("")
+            continue
+        else:
+            _, reply_ids = extract_tweets(page_source)
+            print("Replies exist ", tweet_id, user_name, len(reply_ids))
+            # pp(reply_ids)
+            if (label == 0) and (len(reply_ids) > 0):
+                parent_path = os.path.join(outpath, 'non-rumours', '{}'.format(tweet_id))
+                os.makedirs(parent_path, exist_ok=True)
+
+            elif (label == 1) and (len(reply_ids) > 0):
+                parent_path = os.path.join(outpath, 'rumours', '{}'.format(tweet_id))
+                os.makedirs(parent_path, exist_ok=True)
             else:
-                _, reply_ids = extract_tweets(page_source)
-                print("Replies exist " ,tweet_id, len(reply_ids))
-                print("")
-                # if (label == 0) and (len(reply_ids)>0):
-                #     parent_path = os.path.join(outpath, 'non-rumours', '{}'.format(tweet_id))
-                #     os.makedirs(parent_path, exist_ok=True)
-                #
-                # elif (label==1) and (len(reply_ids)>0):
-                #     parent_path = os.path.join(outpath, 'rumours', '{}'.format(tweet_id))
-                #     os.makedirs(parent_path, exist_ok=True)
-                # else:
-                #     continue
+                continue
 
-                # with open(os.path.join(parent_path, 'reactions_ids.pickle'), 'wb') as f:
-                #     pickle.dump(reply_ids, f)
-                #     f.close()
-                #
-                # with open(os.path.join(parent_path, 'reactions_ids.pickle'), 'rb') as f:
-                #     x = pickle.load(f)
-                #     # print(len(x))
-                end = time.time()
-                print(end-start)
-                if i%1000==0:
-                    print("Tweet: {}/{} , So far......... {} ". format(i, len(df), end-very_start ))
-                # if i == 3:
-                #     break
+            with open(os.path.join(parent_path, 'reactions_ids.pickle'), 'wb') as f:
+                pickle.dump(reply_ids, f)
+                f.close()
+
+            with open(os.path.join(parent_path, 'reactions_ids.pickle'), 'rb') as f:
+                x = pickle.load(f)
+                # print(len(x))
+
+            end = time.time()
+            print(end - start)
+            print("")
+            if i % 1000 == 0:
+                print("Tweet: {}/{} , So far......... {} ".format(i, len(df), end - very_start))
+            # if i == 3:
+            #     break
     close_driver(driver)
     driver.quit()
 
-#
+
+def merge_reply_ids(source_id_path, reply_path):
+    """
+    Merge all reply ids of all sampled source tweets to download them using Hydrator
+    :return: .txt containing replies across different source tweets
+    """
+    if source_id_path.endswith('.csv'):
+        source_ids = pd.read_csv(source_id_path)
+    elif source_id_path.endswith('.pickle'):
+        with open(source_id_path, 'rb') as f:
+            source_ids = pickle.load(f)
+    else:
+        print("Check source id file..")
+    print(list(source_ids))
+    ## Sort data chronogically
+    source_ids['created_at'] = pd.to_datetime(source_ids['created_at'])
+    source_ids.sort_values(by='created_at', inplace=True)
+    ## Drop duplicates
+    source_ids.drop_duplicates(subset='text', inplace=True, keep='first')
+    print(source_ids.head())
+    print("Number of tweets after deduplication", len(source_ids))
+
+    reply_dict ={}
+    reply_count = 0
+    x = []
+    for i, row in source_ids.iterrows():
+        source_id = str(int(row['id']))
+        print("")
+        print("Source id ", source_id)
+        label = row['label']
+        rtype = 'rumours' if label==1 else 'non-rumours'
+        reply_id_file = glob(os.path.join(reply_path, '*/{}/*.pickle'.format(source_id)))
+
+        if reply_id_file:
+            reply_id_file = reply_id_file[0] # replies pickle file
+
+            with open(reply_id_file, 'rb') as f:
+                rpl_ids = pickle.load(f)
+                print("replies ids ", rpl_ids) # a list of reply ids
+                x.extend(rpl_ids)
+                if rpl_ids not in reply_dict.values():
+                    reply_dict[source_id] = rpl_ids
+                    reply_count += len(rpl_ids)
+                    print(row['text'])
+                    ## Save file for downloading replies using Hydrator
+                    # for rid in rpl_ids:
+                    #     with open(os.path.join(reply_path, 'all_replies.txt'), 'a') as f:
+                    #         f.write(rid)
+                    #         f.write('\n')
+
+                else:
+                    print("Already exists ")
+                    print(row['text'])
+
+    with open(os.path.join(reply_path, 'reply_dict.pickle'), 'wb') as f:
+        pickle.dump(reply_dict, f)
+    # pp(reply_dict)
+    print(len(reply_dict.items()))
+    
+if __name__ == "__main__":
+    """
+       Parameters
+       -------------------------------------------------------------------------------
+       event: event name
+       sampled_tweets: file (augmented and sampled dataframe)
+       outpath: path to save reaction ids 
+       
+       reply_path: path to /source_tweet_id/replies_ids.pickle
+    """
+
+    event = 'sydneysiege'
+    sampled_tweets = os.path.join('..', '..', 'data_augmentation', 'data_hydrator', 'file-embed-output', '{}'.format(event),
+                              '9003-0.266.pickle')
+    print("Sampled tweet file: {}".format(sampled_tweets))
+    outpath = os.path.abspath(os.path.join('..', '..', 'data_augmentation', 'data_hydrator', 'augmented_data', '{}'.format(event)))
+    os.makedirs(outpath, exist_ok=True)
+
+    reply_scraper_main(sampled_tweets, outpath)
+    # merge_reply_ids(sampled_tweets, outpath)
+    # deduplicates(sampled_tweets)

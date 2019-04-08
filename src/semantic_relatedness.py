@@ -169,6 +169,11 @@ def load_data(event):
     cand = os.path.join(dpath, 'input-cand-user-processed.pickle')
     with open(os.path.join(cand), 'rb') as tf:
         cand = pickle.load(tf)
+        # print(len(cand))
+        # print(len(cand[:3155558]))
+        # print(len(cand[3155557:]))
+        # cand = cand[:3155558]
+        # cand = cand[3155557:]
         tf.close()
     print("Number of processed candidates: ", len(cand))
 
@@ -191,6 +196,7 @@ def hydrator_sem_sim(event, cand_emd, ref_emd,  score_path):
     """
     ## Load ELMo embedding dictionaries
     f1 = h5py.File(cand_emd, 'r')
+    # f1 = h5py.File(open(cand_emd, 'rb'), 'r')
     print("Keys: %s" % len(f1.keys()))
 
     f2 = h5py.File(ref_emd, 'r')
@@ -198,7 +204,8 @@ def hydrator_sem_sim(event, cand_emd, ref_emd,  score_path):
 
     ## Load candidates and references
     ref, cand = load_data(event= event)
-
+    print(len(cand))
+    print((len(f1.keys())-1))
     assert len(cand) == (len(f1.keys())-1) # dropped df length is equal to the # of keys in embeddings (-1: sentence to index)
     assert len(ref) == (len(f2.keys())-1)
 
@@ -250,13 +257,13 @@ def eval_results():
 
 def main():
     if platform == 'darwin':
-        event = 'sydneysiege'
+        event = 'ferguson'
         cand_emd = os.path.join('..',
                                'data_augmentation/data/file-embed-output/{}/output-cand.hdf5'.format(event))
 
         ref_emd = os.path.join('..',
                                     'data_augmentation/data/file-embed-output/{}/output-ref.hdf5'.format(event))
-
+        #
         # cand_emd = os.path.join(os.path.dirname(__file__), '..', 'data/semeval2015/file-embed-output/5.5b-avg/output-text1.hdf5')
         # ref_emd = os.path.join(os.path.dirname(__file__), '..', 'data/semeval2015/file-embed-output/5.5b-avg/output-text2.hdf5')
         # TODO: define arguments
@@ -278,6 +285,8 @@ def main():
         os.makedirs(score_path, exist_ok=True)
         # newdf_path = args.tweet_path
         # empty_indice_path = args.empty_path
+        print(cand_emd)
+        print(ref_emd)
     hydrator_sem_sim(event, cand_emd, ref_emd, score_path)
 
     # semeval_sem_sim(cand_emd, ref_emd)
@@ -285,6 +294,9 @@ def main():
     # cand_empty = empty_indices(event=event, t='candidates', action='load')
     # ref_empty = empty_indices(event=event, t='ref', action='load')
 
-if __name__ == '__main__':
-    # main()
-    eval_results()
+# if __name__ == '__main__':
+#     main()
+    # eval_results()
+# event= 'ferguson'
+# ref, cand = load_data(event= event)
+# print()

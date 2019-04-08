@@ -1,5 +1,9 @@
 import pandas as pd
 import os
+import matplotlib
+matplotlib.use('TkAgg')
+import matplotlib.pyplot as plt
+import numpy as np
 
 def eval(result_path):
     """
@@ -29,6 +33,9 @@ def eval(result_path):
     max_R = 0
     max_SP = 0
     optimum_threshold = 0
+    ps = []
+    rs =[]
+    threshs=[]
     for threshold in threshold_candidates:
         df.loc[df[df.sim_scores >= threshold].index, 'syslabel'] = 1
         df.loc[df[df.sim_scores < threshold].index, 'syslabel'] = 0
@@ -43,9 +50,14 @@ def eval(result_path):
             max_R = R
             max_SP = SP
             optimum_threshold = threshold
+            ps.append(P)
+            rs.append(R)
+            threshs.append(optimum_threshold)
             # print("max F-measure: {:0.4f}, P: {:0.4f}, R: {:0.4f}, threshold: {:0.6f}".format(max_F, max_P, max_R, optimum_threshold))
             print("max P: {:0.4f}, F: {:0.4f}, R: {:0.4f}, SP: {:0.4f}, threshold: {:0.6f}".format(max_P, max_F, max_R, max_SP, optimum_threshold))
-
+        # if threshold > 0.33:
+        #     break
+    return ps, rs, threshs
 
 def get_eval_metrics(syslabels, goldlabels):
     tp = 0
@@ -72,3 +84,25 @@ def get_eval_metrics(syslabels, goldlabels):
     # print("tp {}, fp {}, tn {}, fn {}".format(tp, fp, tn, fn))
     testsize = str(tp + fn + fp + tn)
     return F, P, R, SP
+
+def plot_pr_curve():
+    result_path = os.path.join('..',  'data/semeval2015/results/elmo_credbank/{}.csv'.format('elmo_merged_55b'))
+    print(os.path.abspath(result_path))
+    ps, rs, threshs = eval(result_path)
+
+    fig, ax = plt.subplots(figsize=(10, 8))
+    ax.plot(threshs, ps, 'k--', linewidth=3, label='Precision')
+    ax.plot(threshs, rs, 'k', linewidth=3, label='Recall')
+    # plt.xlabel('Threshold')
+    ax.set_xlabel('Threshold', fontsize=36)
+    plt.xticks(fontsize=33)
+    plt.yticks(fontsize=36)
+    plt.legend(loc='lower left', fontsize=34)
+    plt.tight_layout()
+    plt.show()
+
+# plot_pr_curve()
+
+# elmo_semantic_similarity()
+# eval_results()
+# prepare_elmo_embeddings()

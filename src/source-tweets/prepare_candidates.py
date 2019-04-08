@@ -28,15 +28,13 @@ pd.set_option('display.expand_frame_repr', False)
 def load_abspath(x):
     return os.path.abspath(x)
 
-# def convert_hydrator_data(event, idfile, tweets):
-def convert_hydrator_data(event, tweets):
+def convert_downloaded_data(event, tweets):
     """
-    1. Convert data obtained using Hydrator (.jsonl) to dataframe (.pickle)
+    1. Convert data obtained using Hydrator/Twint (.jsonl) to dataframe (.pickle)
     https://github.com/DocNow/hydrator
     :param event: event name
-    :param idfile: filename containing tweet ids
     :param tweets: filename containint downloaded tweets
-    :return:
+    :return: dataframe (input-cand-user.pickle)
     """
     global temp_path
     if platform == 'darwin':
@@ -63,6 +61,8 @@ def convert_hydrator_data(event, tweets):
     texts = []
     dates = []
     lang =[]
+    user_ids = []
+    user_names = []
     # df = pd.DataFrame(columns=['id', 'created_at','text', 'processed_text'], dtype=str)
     # df = pd.DataFrame(columns=['id', 'created_at','text', 'lang'], dtype=str)
     df = pd.DataFrame(columns=['id', 'created_at','text'], dtype=str)
@@ -70,23 +70,28 @@ def convert_hydrator_data(event, tweets):
         start = time.time()
         for i, obj in enumerate(reader):
 
-            ## Hydrator objects
-            # source_id = obj['id_str']
-            # text = obj['full_text']
+            ## Hydrator objects (pheme, bostonbombings)
+            source_id = obj['id_str']
+            text = obj['full_text']
+            lang.append(obj['lang'])
+            screen_name = obj['user']['screen_name']
+            user_id = obj['user']['id_str']
             created_at = obj['created_at']
-            # lang.append(obj['lang'])
 
-
-            ## Twint objects
-            source_id = str(obj['id'])
-            text = obj['tweet']
-            created_at =  datetime.datetime.fromtimestamp(obj['created_at'] / 1e3)
-            lang.append('en')
+            ## Twint objects (manchesterbombings, christchurch)
+            # source_id = str(obj['id'])
+            # text = obj['tweet']
+            # created_at = obj['created_at']
+            # created_at =  datetime.datetime.fromtimestamp(obj['created_at'] / 1e3)
+            # screen_name = obj['username']
+            # user_id = str(obj['user_id'])
+            # lang.append('en')
 
             processed_ids.append(source_id)
             texts.append(text)
             dates.append(created_at)
-
+            user_ids.append(user_id)
+            user_names.append(screen_name)
             if i % 5000 ==0:
                 print(i)
     reader.close()
@@ -94,20 +99,30 @@ def convert_hydrator_data(event, tweets):
     df['created_at'] = dates
     df['text'] = texts
     df['lang'] = lang
+    df['screen_name'] = user_names
+    df['user_id'] = user_ids
     df = df[df.lang=='en']
     df.reset_index(drop=True, inplace=True)
-    with open(os.path.join(temp_path, 'input-cand.pickle'), 'wb') as tf:
-        pickle.dump(df, tf)
-        tf.close()
-    with open(os.path.join(temp_path, 'input-cand.pickle'), 'rb') as tf:
-        x = pickle.load(tf)
-        print(x)
-        tf.close()
+    print(len(df))
+
+    # with open(os.path.join(temp_path, 'input-cand-user.pickle'), 'wb') as tf:
+    #     pickle.dump(df, tf)
+    #     tf.close()
+    #
+    # with open(os.path.join(temp_path, 'input-cand-user.pickle'), 'rb') as tf:
+    #     x = pickle.load(tf)
+    #     print(x)
+    #     tf.close()
+
+    # with open(os.path.join(temp_path, 'input-cand.pickle'), 'rb') as tf:
+    #     x = pickle.load(tf)
+    #     print(x)
+    #     tf.close()
 
 def merge_keywords():
     """
     Merge and deduplicate tweets collected using multiple keywords assoiated with one event
-    :return: jsonl
+    :return: [event].jsonl
     """
     # data = glob(os.path.join('..', '..', 'data_augmentation/christchurch-shooting/*.json'))
     data = glob(os.path.join('..', '..', 'data_augmentation/manchesterbombings/*.json'))
@@ -160,13 +175,11 @@ def main():
         tweets = args.tweets
 
     elif platform == 'darwin':
-        event ='christchurch'
-        # idname = '2013-boston-marathon-bombing.ids'
+        event ='germanwings'
+        print(event)
         tweets = '{}.jsonl'.format(event)
 
-    # convert_hydrator_data(event, idname, tweets)
-    convert_hydrator_data(event,  tweets)
-
+    convert_downloaded_data(event,  tweets)
     # merge_keywords()
 
 main()

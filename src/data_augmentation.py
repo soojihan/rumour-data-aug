@@ -25,7 +25,8 @@ def data_augmentation(event: str = 'sydneysiege'):
     """
 
     ## Load tweet objects to collect ids of tweets with retweets
-    jsonl_file = os.path.join('..', 'data_augmentation/data_hydrator/downloaded_data/hydrator/{}.jsonl'.format(event))
+    # jsonl_file = os.path.join('..', 'data_augmentation/data_hydrator/downloaded_data/hydrator/{}.jsonl'.format(event))
+    jsonl_file = os.path.join('..', 'data_augmentation/data_hydrator/downloaded_data/hydrator/charliehebdo_chunk/{}_11.jsonl'.format(event))
     jsonl_reader = jsonlines.open(jsonl_file)
     has_retweets = set()
     with jsonlines.open(jsonl_file) as reader:  # load tweets obtained uinsg Hydrator (.jsonl)
@@ -39,7 +40,8 @@ def data_augmentation(event: str = 'sydneysiege'):
 
     # raise SystemExit
     # files = glob(os.path.join(os.path.dirname(__file__), '..', 'data_augmentation/data/file-embed-output/{}/scores/ref*.csv'.format(event)))
-    files = glob(os.path.join(os.path.dirname(__file__), '..', 'data_augmentation/data_hydrator/file-embed-output/{}/scores/ref*.csv'.format(event)))
+    files = glob(os.path.join(os.path.dirname(__file__), '..', 'data_augmentation/data_hydrator/file-embed-output/{}/scores_11/ref*.csv'.format(event)))
+    assert len(files) == 61
     pos_ids = set()
     neg_ids = set()
 
@@ -58,7 +60,6 @@ def data_augmentation(event: str = 'sydneysiege'):
         pos_subset = df[df['sim_score'] >= pos_threshold]
         ## Sample positive examples. 'id' here refers to the indices of a candidate set
         sub_pos_ids = set(pos_subset['id'].astype(int).values)
-
         ## Sample negative examples
         # TODO: Improve a method for sampling negative examples
         neg_subset = df[df['sim_score'] < neg_threshold]
@@ -102,14 +103,17 @@ def data_augmentation(event: str = 'sydneysiege'):
 
     # infile = '/Users/suzie/Desktop/PhD/Projects/data-aug/data_augmentation/data/file-embed-output/{}/'.format(event)
     infile = os.path.join('..', 'data_augmentation/data_hydrator/file-embed-output/{}/'.format(event))
-    _, cand = load_data(event=event)
+    _, cand = load_data(event=event, batch_num=11)
+    pp(list(cand))
     # cand.drop(['index'], axis=1, inplace=True) ## TODO: add drop=True when generating candidate set in elmo_data_preprocessing.py
+    # cand['order_index'] = cand['index'].values ## for separated files, keept the indices in the original candidate set
     cand['index'] = np.arange(len(cand)) ## score dfs' ids are associated with row numbers of the candidate set
     assert len(cand)==len(df)
+    print(cand.index)
 
-    # full_df = pd.read_csv(os.path.join(infile, 'dropped_candidates.csv'))
-    # total_indices = list(full_df.index)
-    # print("Total number of candidates ", len(total_indices))
+    ### full_df = pd.read_csv(os.path.join(infile, 'dropped_candidates.csv'))
+    ### total_indices = list(full_df.index)
+    ### print("Total number of candidates ", len(total_indices))
 
 
     ## Generate final input df
@@ -151,6 +155,7 @@ def data_augmentation(event: str = 'sydneysiege'):
 
     result = pd.concat([pos_subset, neg_subset], sort=True)
     print(len(result))
+    print(result.head())
     print("")
     for k, row in result.iterrows():
         if k in total_scores:
@@ -161,8 +166,8 @@ def data_augmentation(event: str = 'sydneysiege'):
 
     # save_path = os.path.join(infile, 'results_p{}<0.3'.format(precision))
     # os.makedirs(save_path, exist_ok=True)
-    result.to_csv(os.path.join(infile, '{}-{}.csv'.format(precision, neg_threshold)))
-    with open(os.path.join(infile, '{}-{}.pickle'.format(precision, neg_threshold)), 'wb') as f:
+    result.to_csv(os.path.join(infile, '{}-{}_11.csv'.format(precision, neg_threshold)))
+    with open(os.path.join(infile, '{}-{}_11.pickle'.format(precision, neg_threshold)), 'wb') as f:
         pickle.dump(result, f)
 
 def manual_inspection(event: str):
@@ -187,7 +192,7 @@ def manual_inspection(event: str):
         print(t, s)
         print("")
 
-event = 'bostonbombings'
+event = 'charliehebdo'
 
 data_augmentation(event=event)
 # manual_inspection(event)

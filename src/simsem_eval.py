@@ -24,6 +24,7 @@ def eval(result_path):
     threshold_candidates = list(set(df['sim_scores'].values))
     # threshold_candidates = [x for x in threshold_candidates if x>=0.5]
     threshold_candidates.sort(reverse=False)
+    print(threshold_candidates)
     # threshold_candidates.sort(reverse=True)
     print(threshold_candidates)
     print(len(threshold_candidates))
@@ -42,6 +43,7 @@ def eval(result_path):
         syslabels = df['syslabel'].values
         goldlabels = df['goldlabel'].values
         F, P, R, SP = get_eval_metrics(syslabels, goldlabels)
+        print(F,P,R)
         # if max_F < F:
         if max_P <= P:
         # if max_SP < SP:

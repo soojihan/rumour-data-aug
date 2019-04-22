@@ -78,10 +78,12 @@ def load_data(event: str = None,
         if cand:
             # data = os.path.join('..', 'data_augmentation/data_hydrator/saved_data/source-tweets/{}/input-cand.pickle'.format(event))
             data = os.path.join('..', 'data_augmentation/data_hydrator/saved_data/source-tweets/{}/input-cand-user.pickle'.format(event))
+            print("cand data filename ", os.path.basename(data))
             with open(os.path.join(data), 'rb') as tf:
                 data = pickle.load(tf)
                 tf.close()
             print("Number of original candidates: ", len(data))
+            print("")
 
         if ref and cand:
             return ref_d, data
@@ -180,21 +182,22 @@ def prepare_input(outpath: str,
         targets =['cand']
     else:
         print("Check dataset type ")
+
     for t in targets:
-        with open(os.path.join(outpath, 'input-{}-processed.pickle'.format(t)), 'rb') as tf:
+        with open(os.path.join(outpath, 'input-{}-processed_11.pickle'.format(t)), 'rb') as tf:
             df = pickle.load(tf)
             tf.close()
         print(len(df))
         pp(list(df))
         print(df.head())
 
-        with open(os.path.join(outpath, 'elmo_{}_input.txt'.format(t)), 'w') as f:
+        with open(os.path.join(outpath, 'elmo_{}_input_11.txt'.format(t)), 'w') as f:
             for i, row in df.iterrows():
                 f.write(str(row['processed_text']))
                 f.write('\n')
             f.close()
 
-        with open(os.path.join(outpath, 'elmo_{}_input.txt'.format(t)), 'r') as f:
+        with open(os.path.join(outpath, 'elmo_{}_input_11.txt'.format(t)), 'r') as f:
             lines = f.read().splitlines()
             print(len(lines))
             assert len(lines) == len(df)
@@ -272,23 +275,24 @@ def split_elmo_input():
             print("")
 
             with open(os.path.join(outpath, 'elmo_cand_input_part1-{}.txt'.format(i)), 'w') as f:
-                for l in lines1:
+                for l in batch:
                     f.write(l)
                     f.write('\n')
                 f.close()
 
 
 def main():
-    event = 'germanwings'
-    preprocess_main(name='augmented', event=event, cand=True, ref=True)
-    # outpath = os.path.abspath(os.path.join('..', 'data_augmentation/data_hydrator/file-embed-input/{}'.format(event)))
-    # prepare_input(outpath=outpath, event=event, ref=True, cand=False)
+    event = 'charliehebdo'
+    # preprocess_main(name='augmented', event=event, cand=True, ref=True)
+    outpath = os.path.abspath(os.path.join('..', 'data_augmentation/data_hydrator/file-embed-input/{}'.format(event)))
+    prepare_input(outpath=outpath, event=event, ref=False, cand=True)
 
 
 if __name__ == '__main__':
-    # main()
+    main()
     # add_user_info(event='sydneysiege')
-    split_elmo_input()
+    # split_elmo_input()
+
 # event='bostonbombings'
 # #
 # data = os.path.join('..',
@@ -316,6 +320,14 @@ if __name__ == '__main__':
 #
 # t = 'ref'
 # with open(os.path.join(outpath, 'elmo_{}_input.txt'.format(t)), 'r') as f:
+#     lines = f.read().splitlines()
+#     print(len(lines))
+#     f.close()
+#
+# event='ferguson'
+# i=2
+# outpath = os.path.abspath(os.path.join('..', 'data_augmentation/data_hydrator/file-embed-input/{}'.format(event)))
+# with open(os.path.join(outpath, 'elmo_cand_input_part1-{}.txt'.format(i)), 'r') as f:
 #     lines = f.read().splitlines()
 #     print(len(lines))
 #     f.close()

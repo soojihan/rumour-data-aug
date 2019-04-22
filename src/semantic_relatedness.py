@@ -155,7 +155,7 @@ def pheme_sem_sim(cand_emd, ref_emd, cand_empty, ref_empty, newdf_path, score_pa
         print(df.head())
         df.to_csv(os.path.join(score_path,'ref-{}_score.csv'.format(ref_k))) # Save scores per reference tweet
 
-def load_data(event):
+def load_data(event, batch_num=None):
     """
     Load preprocessed candidates and references
     :param event:
@@ -166,13 +166,18 @@ def load_data(event):
     elif platform == 'darwin':
         dpath = os.path.join('..', 'data_augmentation/data_hydrator/file-embed-input/{}'.format(event))
 
-    cand = os.path.join(dpath, 'input-cand-user-processed.pickle')
+    # batch_size = 788900
+
+    cand = os.path.join(dpath, 'input-cand-processed_{}.pickle'.format(batch_num)) # charliehebdo
+    # cand = os.path.join(dpath, 'input-cand-user-processed-part2.pickle') # ferguson
     with open(os.path.join(cand), 'rb') as tf:
         cand = pickle.load(tf)
-        # print(len(cand))
         # print(len(cand[:3155558]))
         # print(len(cand[3155557:]))
         # cand = cand[:3155558]
+        # print(batch_num * batch_size, (batch_num + 1) * batch_size)
+        # if batch_num is not None: # ferguson
+        #     cand = cand[batch_num * batch_size: (batch_num + 1) * batch_size]
         # cand = cand[3155557:]
         tf.close()
     print("Number of processed candidates: ", len(cand))
@@ -185,7 +190,7 @@ def load_data(event):
 
     return ref, cand
 
-def hydrator_sem_sim(event, cand_emd, ref_emd,  score_path):
+def hydrator_sem_sim(event, cand_emd, ref_emd,  score_path, batch_num =None):
     """
     Compute semantic relatedness of Hydrator tweets
     :param event:
@@ -203,7 +208,10 @@ def hydrator_sem_sim(event, cand_emd, ref_emd,  score_path):
     print("Keys: %s" % len(f2.keys()))
 
     ## Load candidates and references
-    ref, cand = load_data(event= event)
+    if batch_num is not None:
+        ref, cand = load_data(event= event, batch_num=batch_num)
+    else:
+        ref, cand = load_data(event=event)
     print(len(cand))
     print((len(f1.keys())-1))
     assert len(cand) == (len(f1.keys())-1) # dropped df length is equal to the # of keys in embeddings (-1: sentence to index)
@@ -212,12 +220,11 @@ def hydrator_sem_sim(event, cand_emd, ref_emd,  score_path):
     for i, ref_k in enumerate(f2.keys()): # Iterate reference embeddings
         sim_scores = []
         tweet_id = []
-        print(i)
+        # print(i)
         for j, cand_k in enumerate(f1.keys()):
-            if j % 1000 ==0:
-                print(j)
+            # if j % 1000 ==0:
+            #     print(j)
             if (ref_k != 'sentence_to_index') and (cand_k!='sentence_to_index'):
-
                 ref_id = int(ref_k)
                 cand_id = int(cand_k)
                 text1 = np.average(f1[(cand_k)], axis=0).reshape(1, -1)
@@ -239,11 +246,10 @@ def hydrator_sem_sim(event, cand_emd, ref_emd,  score_path):
         df = pd.DataFrame()
         df['sim_score'] = sim_scores
         df['id'] = tweet_id
-        print(df.head())
+        # print(df.head())
         df.sort_values(by=['id'], ascending=True)
-        print(df.head())
         df.to_csv(os.path.join(score_path,'ref-{}_score.csv'.format(ref_k))) # Save scores per reference tweet
-
+        print("ref {} is done".format(ref_k))
 
 def eval_results():
     """
@@ -257,13 +263,14 @@ def eval_results():
 
 def main():
     if platform == 'darwin':
-        event = 'ferguson'
+        event = 'germanwings'
         cand_emd = os.path.join('..',
-                               'data_augmentation/data/file-embed-output/{}/output-cand.hdf5'.format(event))
+                               'data_augmentation/data_hydrator/file-embed-output/{}/elmo-cand-output.hdf5'.format(event))
 
         ref_emd = os.path.join('..',
-                                    'data_augmentation/data/file-embed-output/{}/output-ref.hdf5'.format(event))
-        #
+                                    'data_augmentation/data_hydrator/file-embed-output/{}/elmo-ref-output.hdf5'.format(event))
+        score_path ='./test_elmo'
+        batch_num=None
         # cand_emd = os.path.join(os.path.dirname(__file__), '..', 'data/semeval2015/file-embed-output/5.5b-avg/output-text1.hdf5')
         # ref_emd = os.path.join(os.path.dirname(__file__), '..', 'data/semeval2015/file-embed-output/5.5b-avg/output-text2.hdf5')
         # TODO: define arguments
@@ -274,6 +281,7 @@ def main():
         parser.add_argument('--cand_emd', help='ELMo embeddings of candidates ')
         parser.add_argument('--ref_emd', help='ELMo embeddings of references')
         parser.add_argument('--score_path', help='path to save semantic relatedness scores')
+        parser.add_argument('--batch_num', help='elmo batch number')
         # parser.add_argument('--tweet_path', help='Path to save dataframes after dropping empty tweets')
         # parser.add_argument('--empty_path', help='Indices of empty strings')
 
@@ -282,20 +290,22 @@ def main():
         cand_emd = args.cand_emd
         ref_emd = args.ref_emd
         score_path = args.score_path
+        batch_num = int(args.batch_num)
         os.makedirs(score_path, exist_ok=True)
         # newdf_path = args.tweet_path
         # empty_indice_path = args.empty_path
         print(cand_emd)
         print(ref_emd)
-    hydrator_sem_sim(event, cand_emd, ref_emd, score_path)
+    # hydrator_sem_sim(event, cand_emd, ref_emd, score_path)
+    hydrator_sem_sim(event, cand_emd, ref_emd, score_path, batch_num)
 
     # semeval_sem_sim(cand_emd, ref_emd)
 
     # cand_empty = empty_indices(event=event, t='candidates', action='load')
     # ref_empty = empty_indices(event=event, t='ref', action='load')
 
-# if __name__ == '__main__':
-#     main()
+if __name__ == '__main__':
+    main()
     # eval_results()
 # event= 'ferguson'
 # ref, cand = load_data(event= event)

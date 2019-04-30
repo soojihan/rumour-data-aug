@@ -12,17 +12,18 @@ import operator
 import csv
 # from textcleaner import tokenize_by_word
 from src.credbankprocessor import preprocessing_tweet_text
-from preprocessing import text_preprocessor
+# from preprocessing import text_preprocessor
 
 from ast import literal_eval # convert string list to actual list
 
-
+"""
+Preprocess SemEval-2015 Task 1 data
+(text preprocessing and label conversion)
 """
 
-"""
 def load_csv(file_path):
     with open(file_path, 'r') as f:
-        df = pd.read_csv(f)
+        df = pd.read_csv(f, dtype=str)
 
     return df
 
@@ -38,6 +39,7 @@ def read_test_label(testlabelfile):
     hasscore = False
     with open(testlabelfile) as tf:
         for tline in tf:
+            print(tline)
             tline = tline.strip()
             tcols = tline.split('\t')
             if len(tcols) == 2:
@@ -55,13 +57,13 @@ def prepare_test_data():
     Remove retweets from the original data in order to find source tweets from Tweet Event 2012-2016 dataset
     :return: csv
     """
-    testlabelfile=  os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data/semeval2015/data/test.label')
+    testlabelfile=  os.path.join('..', '..', 'data/semeval2015/data/test.label')
     goldlabels, goldscores = read_test_label(testlabelfile)
-
-    data_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data/semeval2015/data')
+    data_path = os.path.join('..', '..','data/semeval2015/data')
     with open(os.path.join(data_path, 'test.data'), 'r') as f:
         test_data = f.read().splitlines()
         test_data = [x.split("\t") for x in test_data]
+        pp(test_data)
     print(len(test_data))
 
     df = pd.DataFrame(columns=['topic', 'tweet1', 'tweet2'])
@@ -73,6 +75,7 @@ def prepare_test_data():
     processed_tweet2 = list(map(lambda x: preprocessing_tweet_text(x), df['tweet2'].values))
     df['goldlabel'] = goldlabels
     df['goldscore'] = goldscores
+    assert len(df) == len(goldscores)
 
     df['processed_tweet1'] = processed_tweet1
     df['processed_tweet2'] = processed_tweet2
@@ -162,3 +165,5 @@ def load_pretrained_glove():
     #     x = pickle.load(f)
     # print(x)
     return embeddings_index
+
+# prepare_test_data()

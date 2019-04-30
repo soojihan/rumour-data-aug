@@ -30,15 +30,16 @@ import csv
 import string
 # from textcleaner import tokenize_by_word
 from src.credbankprocessor import preprocessing_tweet_text
-from preprocessing import text_preprocessor
+# from preprocessing import text_preprocessor
 
 from ast import literal_eval # convert string list to actual list
 from nltk import TweetTokenizer
 from semeval_data_processor import load_csv
-from simsem_eval import eval
+from src.simsem_eval import eval
 import nltk
 from nltk.corpus import stopwords
 from nltk import WordNetLemmatizer
+
 
 # _stop_words = stopwords.words('english')
 # stop_words_filter = lambda t : filter(lambda a: a not in _stop_words, t)
@@ -58,23 +59,28 @@ pd.options.mode.chained_assignment = None
 
 batch_size = 1000
 
-# options_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json"
-# weight_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5"
-options_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway_5.5B/elmo_2x4096_512_2048cnn_2xhighway_5.5B_options.json"
-weight_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway_5.5B/elmo_2x4096_512_2048cnn_2xhighway_5.5B_weights.hdf5"
 
-# elmo_credbank_model_path = os.path.join(os.path.dirname(__file__), '..', '..', 'rumourdnn', "resource", "embedding",
-#                                         "elmo_model", "weights_12262018.hdf5")
-elmo = ElmoEmbedder(
-    # options_file="https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway_5.5B/elmo_2x4096_512_2048cnn_2xhighway_5.5B_options.json",
-    # weight_file=elmo_credbank_model_path)
-    options_file= options_file,
-    weight_file= weight_file)
+## Load ELMo
+def load_elmo(finetuned=False):
+    global elmo
+    options_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json"
+    # options_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway_5.5B/elmo_2x4096_512_2048cnn_2xhighway_5.5B_options.json"
+    if finetuned:
+        weight_file = os.path.join(os.path.dirname(__file__), '..', '..', 'rumourdnn', "resource", "embedding",
+                                            "elmo_model", "weights_12262018.hdf5")
+    else:
+        weight_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway_5.5B/elmo_2x4096_512_2048cnn_2xhighway_5.5B_weights.hdf5"
+        # weight_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5"
+
+    elmo = ElmoEmbedder(
+        options_file= options_file,
+        weight_file= weight_file)
+
 
 def load_data():
     # data_type = sys.argv[1]
     data_type = "merged_semeval"
-    data_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data/semeval2015/data/{}.csv'.format(data_type))
+    data_path = os.path.join('..','..', 'data/semeval2015/data/{}.csv'.format(data_type))
     print("data path ", data_path)
     data = load_csv(data_path)
     print(len(data))
@@ -94,8 +100,7 @@ def elmo_semantic_similarity():
     :return:
     """
 
-
-    # elmo = ElmoEmbedder(options_file= options_file, weight_file=weight_file)
+    elmo = load_elmo()
     data = load_data()
 
     sim_scores =[]
@@ -105,7 +110,8 @@ def elmo_semantic_similarity():
 
         tokenised_tweet1 = list(map(lambda x: literal_eval(x), batch['processed_tweet1'].values))
         tokenised_tweet2 = list(map(lambda x: literal_eval(x), batch['processed_tweet2'].values))
-        #
+
+        # Text normalisation
         # tokenised_tweet1 = list(map(lambda x: list(stop_words_filter(x)), tokenised_tweet1))
         # tokenised_tweet1 = list(map(lambda x: list(punctuation_filter(x)), tokenised_tweet1))
         # tokenised_tweet1 = list(map(lambda x: _lemmatize(x), tokenised_tweet1))
@@ -114,9 +120,6 @@ def elmo_semantic_similarity():
         # tokenised_tweet2 = list(map(lambda x: list(punctuation_filter(x)), tokenised_tweet2))
         # tokenised_tweet2 = list(map(lambda x: _lemmatize(x), tokenised_tweet2))
 
-        #######################
-        # TO DO: Apply bactch #
-        #######################
         ## Computes the ELMo embeddings for a batch of tokenized sentences.
         elmo_tweet1 = elmo.embed_batch(tokenised_tweet1) # a list of tensors
         # print("elmo tweet1 shape ", elmo_tweet1[2].shape)
@@ -124,7 +127,7 @@ def elmo_semantic_similarity():
 
         ## Compute the mean elmo vector for each tweet
         elmo_tweet1_avg = list(map(lambda x: np.mean(x[2],axis=0).reshape(1,-1), elmo_tweet1))
-        # print("elmo tweet1 avg shape ", elmo_tweet1_avg[0].shape)
+        print("elmo tweet1 avg shape ", elmo_tweet1_avg[0].shape)
         elmo_tweet2_avg = list(map(lambda x: np.mean(x[2],axis=0).reshape(1,-1), elmo_tweet2))
         elmo_tweet1_avg = np.squeeze(np.asarray(elmo_tweet1_avg), axis=1)
         elmo_tweet2_avg = np.squeeze(np.asarray(elmo_tweet2_avg), axis=1)
@@ -141,12 +144,12 @@ def elmo_semantic_similarity():
         end = time.time()
         print("Time elapsed for bath {}: {}".format(int(j/batch_size), end-start))
         batch['sim_scores'] = batch_scores
-        # outfile = os.path.join(os.path.dirname(os.path.dirname(__file__)),
-        #                        'data/semeval2015/{}_batch{}.csv'.format('elmo_merged', int(j/batch_size)))
-        # batch.to_csv(outfile)
+        outfile = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                               'data/semeval2015/{}_batch{}.csv'.format('elmo_merged', int(j/batch_size)))
+        batch.to_csv(outfile)
     data['sim_scores'] = sim_scores
     outfile = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data/semeval2015/results/elmo_credbank/{}.csv'.format('elmo_merged_55b'))
-    # os.makedirs(outfile, exist_ok=True)
+    os.makedirs(outfile, exist_ok=True)
     data.to_csv(outfile)
     print("Done")
 
@@ -181,9 +184,10 @@ def prepare_elmo_embeddings():
     print("--- Done")
 
 def eval_results():
-    result_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data/semeval2015/results/elmo_credbank/{}.csv'.format('elmo_merged_55b'))
+    result_path = os.path.join('..', '..', 'data/semeval2015/results/elmo_credbank/{}.csv'.format('elmo_merged_55b'))
+    print(os.path.abspath(result_path))
     eval(result_path)
 
 # elmo_semantic_similarity()
-# eval_results()
-prepare_elmo_embeddings()
+eval_results()
+# prepare_elmo_embeddings()

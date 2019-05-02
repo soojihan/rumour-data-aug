@@ -8,7 +8,7 @@ Following Rumour Dataset are used in our experiment.
 
 * [Twitter event datasets (2012-2016)](https://figshare.com/articles/Twitter_event_datasets_2012-2016_/5100460) : This is the Tweet corpus that is used as candidate tweets for event-specific data augmentation. 
 
-*[PHEME dataset](https://figshare.com/articles/PHEME_dataset_for_Rumour_Detection_and_Veracity_Classification/6392078): References(labels) for the five events(Ferguson unrest, Sydney siege, Ottawa shooting, Charlie hebdo attacks, and Germanwings plance crash) are obtained from the PHEME data.
+* [PHEME dataset](https://figshare.com/articles/PHEME_dataset_for_Rumour_Detection_and_Veracity_Classification/6392078): References(labels) for the five events(Ferguson unrest, Sydney siege, Ottawa shooting, Charlie hebdo attacks, and Germanwings plance crash) are obtained from the PHEME data.
 
 ## Data Collection
 

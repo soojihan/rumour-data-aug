@@ -340,10 +340,8 @@ if __name__ == "__main__":
        Parameters
        -------------------------------------------------------------------------------
        event: event name
-       sampled_tweets: path to augmented data (output of 'src/data_augmentation.py'
+       sampled_tweets: path to augmented data (output of 'src/data_augmentation.py')
        outpath: path to save reaction ids 
-
-       reply_path: path to /source_tweet_id/replies_ids.pickle
     """
 
     event = 'ottawashooting'

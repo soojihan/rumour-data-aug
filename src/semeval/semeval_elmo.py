@@ -40,7 +40,7 @@ import nltk
 from nltk.corpus import stopwords
 from nltk import WordNetLemmatizer
 
-
+## Text normalisation methods
 # _stop_words = stopwords.words('english')
 # stop_words_filter = lambda t : filter(lambda a: a not in _stop_words, t)
 # punctuation_filter = lambda t : filter(lambda a: a not in string.punctuation, t)
@@ -60,8 +60,12 @@ pd.options.mode.chained_assignment = None
 batch_size = 1000
 
 
-## Load ELMo
 def load_elmo(finetuned=False):
+    """
+    Load ELMo model
+    :param finetuned:
+    :return:
+    """
     global elmo
     options_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json"
     # options_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway_5.5B/elmo_2x4096_512_2048cnn_2xhighway_5.5B_options.json"
@@ -86,7 +90,6 @@ def load_data():
     print(len(data))
     data.drop(['Unnamed: 0'], inplace=True, axis=1)
     # data.dropna(inplace=True)
-    # data = data[:1001]
     print(data.isnull().any().any())
     if data.isnull().any().any():
         raise ValueError
@@ -100,7 +103,7 @@ def elmo_semantic_similarity():
     :return:
     """
 
-    elmo = load_elmo()
+    load_elmo()
     data = load_data()
 
     sim_scores =[]
@@ -153,41 +156,11 @@ def elmo_semantic_similarity():
     data.to_csv(outfile)
     print("Done")
 
-def prepare_elmo_embeddings():
-    """
-    Offline
-    :return:
-    """
-    data = load_data()
-    embedding_dict1 = {}
-    embedding_dict2 = {}
-    start = time.time()
-    for i, row in data.iterrows():
-        if i%500==0:
-            print("{}/{}".format(i, len(data)))
-        processed_text1 = preprocessing_tweet_text(row['processed_tweet1'])
-        processed_text2 = preprocessing_tweet_text(row['processed_tweet2'])
-        elmo_1 = elmo.embed_sentence(processed_text1)
-        elmo_1 = np.mean(elmo_1[2,:,:], axis=0).reshape(1,-1)
-        embedding_dict1[i] = elmo_1
-
-        elmo_2 = elmo.embed_sentence(processed_text2)
-        elmo_2 = np.mean(elmo_2[2, :, :], axis=0).reshape(1, -1)
-        embedding_dict2[i] = elmo_2
-
-        end=time.time()
-    save_dir = os.path.join(os.path.dirname(__file__), '..', 'data/semeval2015/offline/elmo_embeddings')
-    with open(os.path.join(save_dir, 'text1.pickle'), 'wb') as f:
-        pickle.dump(embedding_dict1, f)
-    with open(os.path.join(save_dir, 'text2.pickle'), 'wb') as f:
-        pickle.dump(embedding_dict2, f)
-    print("--- Done")
 
 def eval_results():
     result_path = os.path.join('..', '..', 'data/semeval2015/results/elmo_credbank/{}.csv'.format('elmo_merged_55b'))
     print(os.path.abspath(result_path))
     eval(result_path)
 
-# elmo_semantic_similarity()
-eval_results()
-# prepare_elmo_embeddings()
+elmo_semantic_similarity()
+# eval_results()

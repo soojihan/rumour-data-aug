@@ -4,13 +4,15 @@
 
 Following Rumour Dataset are used in our experiment.
 
-* [CrisisLexT26](https://github.com/sajao/CrisisLex/tree/master/data/CrisisLexT26): Unlabeled Boston Bombing dataset are obtained from CrisisLexT26 corpus.
+* [CrisisLexT26](https://github.com/sajao/CrisisLex/tree/master/data/CrisisLexT26): References(labels) for the Boston marathon bombings are obtained from CrisisLexT26 corpus.
 
-* [Twitter event datasets (2012-2016)](https://figshare.com/articles/Twitter_event_datasets_2012-2016_/5100460) : This is the Tweet corpus that is  used as candidate tweets for event specific data augmentation. 
+* [Twitter event datasets (2012-2016)](https://figshare.com/articles/Twitter_event_datasets_2012-2016_/5100460) : This is the Tweet corpus that is used as candidate tweets for event-specific data augmentation. 
+
+*[PHEME dataset](https://figshare.com/articles/PHEME_dataset_for_Rumour_Detection_and_Veracity_Classification/6392078): References(labels) for the five events(Ferguson unrest, Sydney siege, Ottawa shooting, Charlie hebdo attacks, and Germanwings plance crash) are obtained from the PHEME data.
 
 ## Data Collection
 
-Data collection is performed to collect social-temporal data set on Twitter platform for rumour candidate tweets.
+Data collection is performed to collect social-temporal data (typically replies and retweets) for rumour source tweets.
 
 ## Semantic Relatedness Computation
 

@@ -1,4 +1,4 @@
-# Training data augmentation for rumour detection using context-sensitive neural language model with large credibility corpus
+# Training data augmentation for rumour detection using context-sensitive neural language model
 
 ## Rumour Data set
 
